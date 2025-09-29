@@ -1,0 +1,14 @@
+[project]
+name = "nyc"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "deltalake>=1.1.4",
+    "docker>=7.1.0",
+    "duckdb>=1.4.0",
+    "pandas>=2.3.2",
+    "polars>=1.33.1",
+    "psycopg2>=2.9.10",
+]

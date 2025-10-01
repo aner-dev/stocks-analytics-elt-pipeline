@@ -3,8 +3,8 @@ import os
 import requests
 from dotenv import load_dotenv
 
-SCRIPT_DIR = Path(__file__).parent
-ENV_FILE = SCRIPT_DIR / "api.env"
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+ENV_FILE = PROJECT_ROOT / "config" / "api.env"
 
 print(f"searching api.env in: {ENV_FILE}")
 
@@ -36,8 +36,12 @@ def extract_and_save():
         print(f"data extracted: {len(lines)} lines")
 
         # Guardar como JSON para usar en tests
-        with open("test/extracted_data.csv", "w", newline="", encoding="utf-8") as f:
-            f.write(csv_text)
+        # with open("tests/extracted_data.csv", "w", newline="", encoding="utf-8") as f:
+        #    f.write(csv_text)
+
+        output_csv_dir = Path(PROJECT_ROOT / "test/extracted_data.csv")
+        output_csv = output_csv_dir.write_text(csv_text)
+        print(f"csv data saved in {output_csv}")
 
         print("💾 Datos CSV guardados en test/extracted_data.csv")
 

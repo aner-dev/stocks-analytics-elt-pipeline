@@ -1,0 +1,12 @@
+*.csv 
+*.json 
+*.parquet 
+
+# Python 
+__pycache__/
+*.pyc 
+.venv/
+.env
+
+# logs 
+*.log 

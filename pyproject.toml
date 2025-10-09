@@ -9,6 +9,7 @@ dependencies = [
     "docker>=7.1.0",
     "dotenv>=0.9.9",
     "duckdb>=1.4.0",
+    "mkdocs>=1.6.1",
     "pandas>=2.3.2",
     "polars>=1.33.1",
     "psycopg2>=2.9.10",

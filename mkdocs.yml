@@ -1,0 +1,5 @@
+site_name: etl-batch
+nav:
+  - Home: index.md 
+  - Notes: notes.md 
+

@@ -15,4 +15,6 @@
 ## .env files 
 - NEVER use "" or '' in environment variables on .venv config files to simple values (URLs, API keys, numbers)
 - cause: error parsing 
-- 
+## docker containers 
+- once the docker run command is executed, i must be secure of the flags and config that i choose 
+- i want to change the user and password env variables? recreate the container, repeat the docker run command 

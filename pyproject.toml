@@ -3,8 +3,10 @@ name = "etl-batch"
 version = "0.1.0"
 requires-python = ">= 3.11"
 dependencies = [
+    "boto3>=1.40.54",
     "dotenv>=0.9.9",
     "loguru>=0.7.3",
+    "minio>=7.2.18",
     "mkdocs>=1.6.1",
     "python-dotenv>=1.1.1",
     "requests>=2.32.5",

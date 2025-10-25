@@ -10,3 +10,7 @@ __pycache__/
 
 # logs 
 *.log 
+.env
+api.env
+db.env
+minio.env

@@ -1,0 +1,83 @@
+x-airflow-base: &airflow-base
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.0-python3.11}
+  env_file:
+    - .env
+    - .airflow.env
+  user: "${AIRFLOW_UID:-50000}:0"
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+
+x-airflow-depends-on: &airflow-depends-on 
+  postgres:
+    condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    ports:
+      - "5433:5432"
+    volumes:
+      - stocks_postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+      - ./scripts/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+      start_interval: 10s
+    restart: always 
+
+  airflow-init:
+    <<: *airflow-base
+    depends_on:
+      <<: *airflow-depends-on
+    command: version
+
+  airflow-webserver:
+    <<: *airflow-base
+    ports:
+      - "8080:8080"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    command: api-server
+    restart: always 
+
+  airflow-scheduler:
+    <<: *airflow-base
+    command: scheduler 
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-01-31T20-20-33Z
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=eltadmin
+      - MINIO_ROOT_PASSWORD=eltpassword
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - stocks_minio_data:/data
+
+volumes:
+  stocks_postgres_data:
+  stocks_minio_data:

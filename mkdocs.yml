@@ -1,5 +1,5 @@
-site_name: etl-batch
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+site_name: elt-stocks
 nav:
-  - Home: index.md 
-  - Notes: notes.md 
-
+  - init: index.md
+  - notes: notes.md

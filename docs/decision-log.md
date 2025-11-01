@@ -11,4 +11,32 @@
 ## benchmarking
 - polars choosed for performance optimization at reading the csv
   - refer to benchmarking.md for implementation details
--
+## documentation 
+- switched from mkdocs to mkdocs-material 
+# minIO 
+- what problem i solve using a minIO bucket? 
+- reasons for incorporate a minIO bucket in the architecture: 
+- re-processing: if Transform logic changes, re-read from minIO without call API again 
+MinIO acts as a resilient staging layer, ensuring data durability and operational reliability.
+
+1. Fault Tolerance & Recovery
+If transformation fails, raw data persists in MinIO
+Enables reprocessing without API re-calls
+
+2. Data Quality & Debugging
+Keep original data snapshots for validation
+Compare raw vs transformed data for debugging
+
+3. Historical Tracking
+Maintain versioned raw data for audit trails
+Support historical reprocessing when business logic changes
+
+4. Pipeline Resilience
+Decouples extraction from transformation
+Prevents data loss during pipeline failures
+Enables backfilling and batch reprocessing
+
+
+# docker 
+- what problem i solve using docker compose? 
+- docker engine

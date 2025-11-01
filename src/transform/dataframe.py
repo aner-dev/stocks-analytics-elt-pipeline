@@ -1,56 +1,100 @@
-import sys
 from pathlib import Path
+import sys
+
+from loguru import logger
+import polars as pl
+
 
 load_dir = Path(__file__).parent.parent / "load"
 sys.path.append(str(load_dir))
 
-from minio_client import load_raw_stock
-import polars as pl
-
-raw_data = load_raw_stock("stocks-raw")
-print("data extracted! keys:", list(raw_data.keys()))
-
-if "Weekly Adjusted Time Series" in raw_data:
-    time_series = raw_data["Weekly Adjusted Time Series"]
-    print(f"📊 Número de registros: {len(time_series)}")
-    print(f"types of registers: {type(time_series)}")
-    print("📅 Primeras fechas:", list(time_series.keys())[:5])
-
-records = [{"timestamp": date, **values} for date, values in time_series.items()]
-df = pl.DataFrame(records)
-print("shape of the dataset:", df.shape)
+logger.remove(0)
+logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 
 
-def transformation(raw_data: dict) -> pl.DataFrame:
-    # data cleaning
+def create_dataframe(raw_data: dict) -> pl.DataFrame:
+    """Transform raw_data into a clean and validated DataFrame"""
+
+    if "api_data" not in raw_data:
+        raise ValueError("api_data key not found in raw_data")
+
+    api_data = raw_data["api_data"]
+    time_series_key = "Weekly Adjusted Time Series"
+
+    if time_series_key not in api_data:
+        available_keys = list(api_data.keys())
+        raise ValueError(
+            f"'{time_series_key} not found in api_data param. Available keys: {available_keys}"
+        )
+
+    time_series = api_data[time_series_key]
+    logger.info(f"number of registers: {len(time_series)}")
+
+    records = [{"timestamp": date, **values} for date, values in time_series.items()]
+    df = pl.DataFrame(records)
+    logger.info(f"initial shape of dataset: {df.shape}")
+
+    # data transform
     df_clean = (
         df.with_columns(
             [
-                pl.col("1. open").cast(pl.Float64).alias("open"),
-                pl.col("2. high").cast(pl.Float64).alias("high"),
-                pl.col("3. low").cast(pl.Float64).alias("low"),
-                pl.col("4. close").cast(pl.Float64).alias("close"),
-                pl.col("5. adjusted close").cast(pl.Float64).alias("adjusted_close"),
-                pl.col("6. volume").cast(pl.Float64).alias("volume"),
-                pl.col("timestamp")
-                .str.strptime(pl.Date, "%Y-%m-%d")
-                .alias("timestamp"),
+                pl.col("1. open").cast(pl.Float64),
+                pl.col("2. high").cast(pl.Float64),
+                pl.col("3. low").cast(pl.Float64),
+                pl.col("4. close").cast(pl.Float64),
+                pl.col("5. adjusted close").cast(pl.Float64),
+                # volume of transactions tipically its a integer (previous type: Float64)
+                pl.col("6. volume").cast(pl.Int64),
+                pl.col("timestamp").str.strptime(pl.Date, "%Y-%m-%d"),
             ]
         )
-        .filter()
-        # Cleanup - drop duplicates
-        .drop(
+        .filter(
+            # filtering nulls and finites
+            pl.col("1. open").is_finite(),
+            pl.col("2. high").is_finite(),
+            pl.col("3. low").is_finite(),
+            pl.col("4. close").is_finite(),
+            pl.col("5. adjusted close").is_finite(),
+            pl.col("6. volume").is_finite(),
+            # business logic
+            pl.col("4. close") > 0,
+            pl.col("6. volume") > 0,
+            pl.col("2. high") >= pl.col("3. low"),
+            pl.col("2. high") >= pl.col("4. close"),
+            pl.col("3. low") <= pl.col("4. close"),
+        )
+        # 3. casting, renaming and final selection
+        .select(
             [
-                "1. open",
-                "2. high",
-                "3. low",
-                "4. close",
-                "5. adjusted close",
-                "6. volume",
+                pl.col("timestamp"),
+                pl.col("1. open").alias("open"),
+                pl.col("2. high").alias("high"),
+                pl.col("3. low").alias("low"),
+                pl.col("4. close").alias("close"),
+                pl.col("5. adjusted close").alias("adjusted_close"),
+                pl.col("6. volume").alias("volume"),
             ]
         )
+        .sort("timestamp")
     )
+    logger.info(f"Transformation complete. Final shape: {df_clean.shape}")
+    return df_clean
 
 
-print("transformation complete")
-print(df_clean.head(3))
+if __name__ == "__main__":
+    try:
+        from minio_client import load_raw_stock
+
+        raw_data = load_raw_stock("stocks-raw")
+        df_clean = create_dataframe(raw_data)
+
+        logger.info("transformation complete.")
+        logger.info(f"dataframe: {df_clean}")
+        logger.info(f"estimated size: {df_clean.estimated_size()}")
+
+        logger.info(f"Summary: {df_clean.describe()}")
+        logger.info(f"final DataFrame shape: {df_clean.shape}")
+
+    except Exception as e:
+        logger.error(f"❌ Test failed: {e}")
+        raise

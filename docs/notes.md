@@ -59,7 +59,14 @@
     - use of native operators/hooks of airflow 
     - centralized management of secrets  
     - reutilize credentials between DAGs
-
-
+# postgreSQL 
+- pg_roles = system view that list all the users/roles in psql 
+- rolname = column with the name of the user/role
+- pg_database = system view that list all the databases of the cluster 
+- datname = column with the name of the database   
+# dataframes 
+- polars-pypsark-pandas-duckb 
+- the main way to transform data previous upload it to the database 
+- 
 
 

@@ -32,3 +32,6 @@ airflow/airflow.db
 *-language-server.jsonc
 
 airflow-compose.yml
+*.meta
+*.env
+**/*.env

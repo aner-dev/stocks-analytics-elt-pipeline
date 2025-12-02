@@ -1,17 +1,64 @@
 [project]
-name = "etl-batch"
+name = "elt_stocks_pipeline"
 version = "0.1.0"
 requires-python = ">= 3.11"
 dependencies = [
-    "boto3>=1.40.54",
-    "dotenv>=0.9.9",
-    "loguru>=0.7.3",
-    "minio>=7.2.18",
-    "mkdocs>=1.6.1",
-    "python-dotenv>=1.1.1",
-    "requests>=2.32.5",
-    "rich>=14.2.0",
-    "semgrep>=1.86.0",
-    "structlog>=25.4.0",
-    "typing>=3.10.0.0",
+  "argcomplete>=3.6.3",
+  "boto3>=1.40.54",
+  "dotenv>=0.9.9",
+  "duckdb>=1.4.1",
+  "minio>=7.2.18",
+  "mkdocs-material>=9.6.22",
+  "pandas>=2.3.3",
+  "polars[pyarrow,pydantic]>=1.34.0",
+  "psycopg2-binary>=2.9.11",
+  "pyarrow>=22.0.0",
+  "pydantic>=2.8.2",
+  "python-dotenv>=1.1.1",
+  "requests>=2.32.5",
+  "rich>=14.2.0",
+  "semgrep>=1.86.0",
+  "setuptools>=80.9.0",
+  "sqlalchemy>=2.0.44",
+  "structlog>=25.4.0",
+  "tqdm>=4.67.1",
+  "typing>=3.10.0.0",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["elt*"]
+
+# LSP 
+[tool.ty.environment]
+python-version = '3.11'
+python-platform = 'linux'
+
+
+[tool.ty.src]
+include = ["src/", "test/", "main.py"]
+exclude = [
+  "**/__pycache__",
+  "**/.egg-info",
+  "config",
+  "data",
+  "minio",
+  "docs/",
+  "site/",
+  "airflow/config",
+  "airflow/logs",
+  "minio/data",
+  "data/",
+]
+
+[[tool.ty.overrides]]
+include = ["tests/**", "**/test_*.py"]
+[tool.ty.overrides.rules]
+unknown-member-type = "ignore"
+
+[dependency-groups]
+dev = ["ty>=0.0.1a27"]

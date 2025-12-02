@@ -1,3 +1,12 @@
+# pydantic 
+- use pydantic as data quality tool
+# elt as pip package 
+- eliminate the dependency on the execution location (working directory)
+- and allow any file to import any other file consistently, as if everything were in a central library.
+- problem: resolving the root module dependency $PYTHONPATH
+- solution: install the project as a Python package in editable mode (uv pip install -e .)
+  - which avoids the need to manually manipulate the $PYTHONPATH based on the *current working directory*.
+  - absolute imports regardless of where the code is executed 
 # focus change to alpha vantage API 
 - proyect evolutions from static dataset (data.gov) for a constant ingest of data  
   - reasons: find limitations when trying to expand the scope of the project 

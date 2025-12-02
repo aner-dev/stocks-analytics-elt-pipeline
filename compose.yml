@@ -1,5 +1,5 @@
 x-airflow-base: &airflow-base
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.0.6-python3.11}
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.1-python3.11}
   env_file:
     - .airflow.env
   user: "${AIRFLOW_UID:-50000}:0"
@@ -49,6 +49,38 @@ services:
 
         /entrypoint airflow config list >/dev/null
 
+        echo "Waiting for PostgreSQL to be ready..."
+
+        until pg_isready -h postgres -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
+          sleep 5
+        done
+
+        echo "Waiting for 'airflow' user and database to be ready..."
+        while ! pg_isready -h postgres -p 5432 -U airflow -d airflow; do
+          echo "Waiting for 'airflow' user and database to be ready..."
+          sleep 5
+        done 
+
+        echo "Airflow user and database are ready."
+
+        echo "Initializing Airflow database..."
+
+        airflow db init
+
+        echo "Creating admin user..."
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+
+        echo "Setting permissions..."
+        chown -R "${AIRFLOW_UID}:0" /opt/airflow/
+
+
         echo "Change ownership of files in /opt/airflow to ${AIRFLOW_UID}:0"
         chown -R "${AIRFLOW_UID}:0" /opt/airflow/
 
@@ -57,6 +89,8 @@ services:
 
         echo "Files in shared volumes:"
         ls -la /opt/airflow/{logs,dags,plugins,config}
+
+        echo "✔️airflow intialization COMPLETED"
 
     # yamllint enable rule:line-length
     user: "0:0"

@@ -1,3 +1,23 @@
+# qutebrowser empty windows 
+- QtWebEngine & kernel desynchronization after a kernel update & system reboot 
+- the engine is responsable for graphic initialization; the dependency issue causes the alteration of data needed for saving qtbrowser sessions (~/.local/.share/qutebrowser/qutebrowser/sessions/code.yml-read.yml)
+## knowledge 
+- QtWebEngine is able to use both software & hardware for renderizing
+## trade-off hardware vs software in web engines (renderizing)
+- Hardware (iGPU): aceleracion y mayor velocidad con posible menos compatibilidad 
+- Software (CPU): Mayor robustez y compatibility without acceleration and less speed.
+# docker rc-service status: crashed 
+- the docker storage-driver (overlay2) needs overlay (kernel module)
+- kernel update broke the compatibility (yay -Syu)
+- "but im using bind mounts!"
+  - docker handled the images build with the storage driver, independently of the location choosed for the persistent data 
+    - docker volume, bind mounts, etc
+## solution 
+- sudo reboot 
+## problems created 
+- logging learning 
+- syslog-ng understanding, logrotate for timing clean up 
+- commands for accessing logs: 'sudo tail -n 50 /var/log/docker.log | rg "ERROR"'
 # docker daemon 
 - problem type: network controller
 - missing crucial kernel module = addrtype2 

@@ -2,7 +2,7 @@
 import requests
 import os
 from dotenv import load_dotenv
-from pathlib import Path
+
 
 DOTENV_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "api.env"
 load_dotenv(dotenv_path=DOTENV_PATH)

@@ -1,18 +1,22 @@
 import boto3
 from botocore.exceptions import ClientError
-from loguru import logger
+from elt.config.logging_config import get_log.
+log.= get_log.__name__)
+ 
+log.= get_log.__name__)
+
 from dotenv import load_dotenv
 import os
 import tempfile
-import sys
+
 from s3_client import minio_client
 
 env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "minio.env")
 load_dotenv(env_path)
 
 
-logger.remove(0)
-logger.add(sys.stderr, format="{time} {level} {message}", level="INFO", serialize=True)
+log.remove(0)
+
 
 
 def download_csv(bucket: str, file_name: str) -> str:
@@ -25,14 +29,14 @@ def download_csv(bucket: str, file_name: str) -> str:
 
         client.download_file(bucket, file_name, temp_path)
 
-        logger.info(f"downloaded {file_name} to {temp_path}")
+        log.info(f"downloaded {file_name} to {temp_path}")
         return temp_path
 
     except ClientError as e:
-        logger.error(f"Error {e}")
+        log.error(f"Error {e}")
         raise
 
 
 if __name__ == "__main__":
     csv_path = download_csv(bucket="data", file_name="extracted_data.csv")
-    logger.info(f"download complete: {csv_path}")
+    log.info(f"download complete: {csv_path}")

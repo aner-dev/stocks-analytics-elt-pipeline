@@ -14,4 +14,6 @@
 - actual: 'stocks-raw'. 
 - implement: 'stocks=curated'
   - casting data into Parquet for read optimization and organized by partitions
-- 
+-
+# files flow 
+- extract.py 

@@ -1,13 +1,13 @@
-import sys
-from pathlib import Path
+
+
 
 load_dir = Path(__file__).parent.parent / "load"
 sys.path.append(str(load_dir))
 
-from minio_client import load_raw_stock
+from load.minio_client import write_bronze
 import polars as pl
 
-raw_data = load_raw_stock("stocks-raw")
+raw_data = write_bronze("stocks-data")
 
 if "Weekly Adjusted Time Series" in raw_data:
     time_series = raw_data["Weekly Adjusted Time Series"]

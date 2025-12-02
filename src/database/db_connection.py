@@ -5,7 +5,7 @@ from typing import Dict, Tuple
 import psycopg2
 from psycopg2.extensions import connection, cursor
 
-logger = logging.getLogger(__name__)
+log.= logging.getLogger(__name__)
 
 
 def get_db_config() -> Dict[str, str]:
@@ -21,7 +21,7 @@ def get_db_config() -> Dict[str, str]:
     missing = [var for var, value in required_vars.items() if not value]
 
     if missing:
-        logger.critical("Missing database configuration: %s", missing)
+        log.critical("Missing database configuration: %s", missing)
         raise ValueError(f"missing required environment variables: {missing}")
 
     return required_vars
@@ -40,12 +40,12 @@ def connecting_db() -> Tuple[connection, cursor]:
         )
 
         cur = conn.cursor()
-        logger.info("database connection established to %s", config["DB_HOST"])
+        log.info("database connection established to %s", config["DB_HOST"])
 
         return conn, cur
 
     except psycopg2.OperationalError as e:
-        logger.exception(f"CRITICAL error: credentials not founded {e}")
+        log.exception(f"CRITICAL error: credentials not founded {e}")
         raise
 
 
@@ -66,14 +66,14 @@ def connect_db_context() -> connection:
             connect_timeout=10,
         )
 
-        logger.info("database connection established to %s", config["DB_HOST"])
+        log.info("database connection established to %s", config["DB_HOST"])
 
         yield conn
 
         conn.commit()
 
     except psycopg2.OperationalError as e:
-        logger.exception(f"CRITICAL error: failed to connect db or credentials invalid. {e}") 
+        log.exception(f"CRITICAL error: failed to connect db or credentials invalid. {e}") 
 
         raise
 
@@ -81,13 +81,13 @@ def connect_db_context() -> connection:
 
         if conn:
             conn.rollback()
-        logger.error(f"transaction failed, changes rolled back. Error: {e}", exc_info=True)
+        log.error(f"transaction failed, changes rolled back. Error: {e}", exc_info=True)
         raise
 
     finally:
         if conn:
             conn.close()
-            logger.info("Database connection closed.")
+            log.info("Database connection closed.")
 
 if __name__ == "__main__":
 

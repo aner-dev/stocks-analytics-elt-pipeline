@@ -1,45 +1,43 @@
 #!/bin/bash
 set -e
+# La corrección del loop (99% CPU) se asegura de que la DB de 'airflow' exista antes
+# de que el proceso 'airflow-init' intente la migración (airflow db init).
+# El problema de CPU es casi siempre una falla en la inicialización/acceso a la DB.
+
+if [[ -z "$ELT_PASSWORD" ]]; then
+  echo "ERROR: ELT_PASSWORD environment variable is required"
+  exit 1
+fi
+
+# El 'until pg_isready' ya lo gestiona Docker, pero mantenerlo es seguro.
+until pg_isready -U "$POSTGRES_USER"; do
+  sleep 2
+done
+
+echo "PostgreSQL is ready, starting database setup..."
+
+# -------------------------------------------------------------
+# NOTA: Usamos comandos CREATE USER/DATABASE sencillos.
+# El script se ejecuta en /docker-entrypoint-initdb.d/, lo que
+# significa que SOLO se ejecuta en la PRIMERA EJECUCIÓN del contenedor.
+# Por lo tanto, no necesitamos los bloques DO $$ IF NOT EXISTS $$.
+# -------------------------------------------------------------
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "postgres" <<-EOSQL
     
-    DO \$\$
-    BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'airflow') THEN
-            CREATE USER airflow WITH PASSWORD '${AIRFLOW_DB_PASSWORD}';
-        ELSE
-            ALTER USER airflow WITH PASSWORD '${AIRFLOW_DB_PASSWORD}';
-        END IF;
-    END
-    \$\$;
+    -- 1. Create Users
+    CREATE USER airflow WITH PASSWORD 'airflow';
+    CREATE USER aner WITH PASSWORD '${ELT_PASSWORD}';
 
-    DO \$\$
-    BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'elt_user') THEN
-            CREATE USER elt_user WITH PASSWORD '${ELT_USER_PASSWORD}';
-        ELSE
-            ALTER USER elt_user WITH PASSWORD '${ELT_USER_PASSWORD}';
-        END IF;
-    END
-    \$\$;
+    -- 2. Create Databases and set ownership
+    CREATE DATABASE airflow OWNER airflow;
+    CREATE DATABASE stocks_db OWNER aner;
 
-    DO \$\$
-    BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'airflow') THEN
-            CREATE DATABASE airflow OWNER airflow;
-        END IF;
-    END
-    \$\$;
-
-    DO \$\$
-    BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'stocks_db') THEN
-            CREATE DATABASE stocks_db OWNER elt_user;
-        END IF;
-    END
-    \$\$;
-
+    -- 3. Grant Permissions
     GRANT ALL PRIVILEGES ON DATABASE airflow TO airflow;
-    GRANT ALL PRIVILEGES ON DATABASE stocks_db TO elt_user;
+    GRANT ALL PRIVILEGES ON DATABASE stocks_db TO aner;
 
 EOSQL
+
+echo "Database initialization completed successfully"
+# El servicio 'airflow-init' ahora puede hacer 'airflow db init'

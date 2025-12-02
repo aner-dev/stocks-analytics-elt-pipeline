@@ -1,59 +1,79 @@
 x-airflow-base: &airflow-base
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.0-python3.11}
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.0.6-python3.11}
   env_file:
-    - .env
     - .airflow.env
   user: "${AIRFLOW_UID:-50000}:0"
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/plugins:/opt/airflow/plugins
-
-x-airflow-depends-on: &airflow-depends-on 
+x-airflow-depends-on: &airflow-depends-on
   postgres:
     condition: service_healthy
-
 services:
   postgres:
     image: postgres:16
-    environment:
-      - POSTGRES_USER=airflow
-      - POSTGRES_PASSWORD=airflow
-      - POSTGRES_DB=airflow
+    env_file:
+      - .postgres.env
     ports:
       - "5433:5432"
     volumes:
-      - stocks_postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+      - ./data/docker/postgresql:/var/lib/postgresql/data
+      - ./scripts/databases-init.sh:/docker-entrypoint-initdb.d/databases-init.sh
       - ./scripts/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 15s
       timeout: 10s
       retries: 5
-      start_period: 5s
+      start_period: 15s
       start_interval: 10s
-    restart: always 
+    restart: always
 
   airflow-init:
     <<: *airflow-base
     depends_on:
       <<: *airflow-depends-on
-    command: version
+    entrypoint: /bin/bash
+    # yamllint disable rule:line-length
+    command:
+      - -c
+      - |
+        if [[ -z "${AIRFLOW_UID}" ]]; then
+          export AIRFLOW_UID=$$(id -u)
+        fi
 
-  airflow-webserver:
-    <<: *airflow-base
+        mkdir -v -p /opt/airflow/{logs,dags,plugins,config}
+
+        /entrypoint airflow version
+
+        /entrypoint airflow config list >/dev/null
+
+        echo "Change ownership of files in /opt/airflow to ${AIRFLOW_UID}:0"
+        chown -R "${AIRFLOW_UID}:0" /opt/airflow/
+
+        echo "Change ownership of files in shared volumes to ${AIRFLOW_UID}:0"
+        chown -v -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,plugins,config}
+
+        echo "Files in shared volumes:"
+        ls -la /opt/airflow/{logs,dags,plugins,config}
+
+    # yamllint enable rule:line-length
+    user: "0:0"
+
+  airflow-api-server:
+    !!merge <<: *airflow-base
     ports:
       - "8080:8080"
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     command: api-server
-    restart: always 
+    restart: always
 
   airflow-scheduler:
-    <<: *airflow-base
-    command: scheduler 
+    !!merge <<: *airflow-base
+    command: scheduler
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
       interval: 30s
@@ -62,22 +82,16 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      <<: *airflow-depends-on
+      !!merge <<: *airflow-depends-on
       airflow-init:
         condition: service_completed_successfully
-
   minio:
     image: quay.io/minio/minio:RELEASE.2024-01-31T20-20-33Z
     command: server /data --console-address ":9001"
-    environment:
-      - MINIO_ROOT_USER=eltadmin
-      - MINIO_ROOT_PASSWORD=eltpassword
+    env_file:
+      - .airflow.env
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - stocks_minio_data:/data
-
-volumes:
-  stocks_postgres_data:
-  stocks_minio_data:
+      - ./data/docker/minio:/data

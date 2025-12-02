@@ -1,6 +1,4 @@
 
-\c stock_db 
-
 -- date dimension 
 CREATE TABLE dim_date (
   date_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

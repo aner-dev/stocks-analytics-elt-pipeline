@@ -1,0 +1,10 @@
+id: cleanup-path-imports
+description: Removes imports of sys, os, and pathlib when only used for path manipulation.
+language: python
+rule:
+  # search 'import X' where X be 'sys', 'os', or 'pathlib'
+  pattern: import $MODULE
+  constraints:
+    $MODULE:
+      matches: "^sys$|^os$|^pathlib$"
+fix: "" # Elimina la línea

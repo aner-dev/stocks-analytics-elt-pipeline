@@ -1,4 +1,8 @@
-from loguru import logger
+from elt.config.logging_config import get_log.
+log.= get_log.__name__)
+ 
+log.= get_log.__name__)
+
 import psycopg2
 from dotenv import load_dotenv
 import os
@@ -28,11 +32,11 @@ def create_sales_table():
             cur.execute(ddl)
             conn.commit()
 
-        logger.info("✅ Tabla creada exitosamente")
+        log.info("✅ Tabla creada exitosamente")
         return True
 
     except Exception as e:
-        logger.error(f"❌ Error: {e}")
+        log.error(f"❌ Error: {e}")
         return False
 
 

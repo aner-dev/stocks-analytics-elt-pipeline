@@ -1,5 +1,9 @@
 from s3_client import minio_client
-from loguru import logger
+from elt.config.logging_config import get_log.
+log.= get_log.__name__)
+ 
+log.= get_log.__name__)
+
 from dotenv import load_dotenv
 import os
 
@@ -14,12 +18,12 @@ def test_minio_connection():
         response = client.list_buckets()
         buckets = [bucket["Name"] for bucket in response["Buckets"]]
 
-        logger.info("connected to minIO")
-        logger.info(f"buckets available: {buckets}")
+        log.info("connected to minIO")
+        log.info(f"buckets available: {buckets}")
         return True
 
     except Exception as e:
-        logger.error(f"Error: connection failed {e}")
+        log.error(f"Error: connection failed {e}")
         return False
 
 

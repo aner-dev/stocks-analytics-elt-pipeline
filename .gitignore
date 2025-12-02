@@ -11,6 +11,24 @@ __pycache__/
 # logs 
 *.log 
 .env
-api.env
-db.env
-minio.env
+site/
+Session.vim
+postgres-language-server.jsonc
+*.jsonc
+minio/data/
+notes.md
+learning-journey.md
+troubleshooting.md
+solved.md
+*.log
+*.egg-info
+*.dist-info
+*.dist-info/
+*.egg-info/
+airflow/logs
+airflow/dags/__pycache__/
+airflow/airflow.db
+
+*-language-server.jsonc
+
+airflow-compose.yml

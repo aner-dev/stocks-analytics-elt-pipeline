@@ -68,5 +68,16 @@
 - polars-pypsark-pandas-duckb 
 - the main way to transform data previous upload it to the database 
 - 
-
-
+# python 
+- ISO 8601 is the international standard for represent dates/hours
+- rule-of-thumb: use ISO 8601 format for representing dates/hours (.isoformat() method)
+  - avoid ambiguity 
+- context of use:
+  - pipelines metadata 
+  - execution logs 
+  - file names
+  - timestamps in databases
+  - APIs & serialization 
+# garbage files and project dir organization 
+- rm -rf logs: unnecessary dir,  logs should be handled by airflow/docker 
+- 

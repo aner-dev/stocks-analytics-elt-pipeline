@@ -1,0 +1,31 @@
+# mount the dbt directory as a volume
+services:
+  scheduler:
+    volumes:
+      - ./dbt:/usr/local/airflow/dbt
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      # === AWS SERVICES ===
+      # S3: Data Storage (Data Lake)
+      # IAM: Authentication for Boto3/Hooks
+      # SQS/SNS: Event Decoupling and Notifications
+      # DYNAMODB: Metadata/State Store (NoSQL)
+      # LAMBDA: Serverless Processing
+      SERVICES: s3,iam,sqs,sns,lambda,dynamodb,secretsmanager
+      DEFAULT_REGION: us-east-1
+      PERSISTENCE: 1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      # Podman/Docker socket
+      # Asegúrate de que el path sea el correcto para tu configuración de Podman
+      # - /var/run/user/1000/podman/podman.sock:/var/run/docker.sock <- EX-CMD
+      - /run/user/{UID}/podman/podman.sock:/var/run/docker. # <- replaced for dynamic env variable ${UID}
+      - ./:/opt/code # bind mount
+
+volumes:
+  localstack_data:
+    driver: local

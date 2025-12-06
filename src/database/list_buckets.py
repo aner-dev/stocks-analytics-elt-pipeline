@@ -7,7 +7,7 @@ log.= get_log.__name__)
 log.= get_log.__name__)
 
 
-from s3_client import minio_client
+from s3_client import S3_client
 
 log.remove(0)
 
@@ -18,7 +18,7 @@ load_dotenv(dotenv_path=DOTENV_PATH)
 
 def list_bucket_files(bucket_name: str):
     try:
-        client = minio_client()
+        client = S3_client()
 
         # list objects in bucket
         response = client.list_objects_v2(Bucket=bucket_name)

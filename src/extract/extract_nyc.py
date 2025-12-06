@@ -6,7 +6,7 @@ from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import time
 
-from elt_stocks_pipeline.config.logging_config import get_logger
+from elt_pipeline_hn.config.logging_config import get_logger
 
 log = structlog.get_logger()
 

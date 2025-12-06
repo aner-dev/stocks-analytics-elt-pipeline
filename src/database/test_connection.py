@@ -1,4 +1,4 @@
-from s3_client import minio_client
+from s3_client import S3_client
 from elt.config.logging_config import get_log.
 log.= get_log.__name__)
  
@@ -7,13 +7,13 @@ log.= get_log.__name__)
 from dotenv import load_dotenv
 import os
 
-env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "minio.env")
+env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "S3.env")
 load_dotenv(env_path)
 
 
-def test_minio_connection():
+def test_S3_connection():
     try:
-        client = minio_client()
+        client = S3_client()
 
         response = client.list_buckets()
         buckets = [bucket["Name"] for bucket in response["Buckets"]]
@@ -28,4 +28,4 @@ def test_minio_connection():
 
 
 if __name__ == "__main__":
-    test_minio_connection()
+    test_S3_connection()

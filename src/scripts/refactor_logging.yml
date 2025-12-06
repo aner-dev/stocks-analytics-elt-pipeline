@@ -1,0 +1,14 @@
+# scripts/refactor_logging.yaml
+
+id: fix-absolute-import-logging-config
+description: Refactors logging_config import to use the new absolute package path.
+language: python
+rule:
+  # search 'from X import get_logger' where X would be a known pattern
+  pattern: from $MODULE import get_logger
+  constraints:
+    $MODULE:
+      # search common patterns of the previous or incorrect path
+      matches: "^elt\\.logging_config$|^elt\\.config\\.logging_config$|^config\\.logging_config$"
+fix: |
+  from elt_stocks_pipeline.config.logging_config import get_logger

@@ -4,7 +4,7 @@
 load_dir = Path(__file__).parent.parent / "load"
 sys.path.append(str(load_dir))
 
-from load.minio_client import write_bronze
+from load.S3_client import write_bronze
 import polars as pl
 
 raw_data = write_bronze("stocks-data")

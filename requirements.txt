@@ -1,0 +1,4 @@
+astronomer-cosmos==1.10.0
+sqlalchemy==1.4.54
+
+astro-run-dag # This package is needed for the astro run command. It will be removed before a deploy

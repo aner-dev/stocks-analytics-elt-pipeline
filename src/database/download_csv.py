@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 import os
 import tempfile
 
-from s3_client import minio_client
+from s3_client import S3_client
 
-env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "minio.env")
+env_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "S3.env")
 load_dotenv(env_path)
 
 
@@ -21,7 +21,7 @@ log.remove(0)
 
 def download_csv(bucket: str, file_name: str) -> str:
     try:
-        client = minio_client()
+        client = S3_client()
 
         client.head_object(Bucket=bucket, Key=file_name)
         with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_file:

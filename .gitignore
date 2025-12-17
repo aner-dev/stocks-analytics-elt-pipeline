@@ -65,3 +65,15 @@ minio/data/
 # 7. TEMPORAL
 # ==================================
 *.swp
+airflow_settings.yml
+airflow_settings.yaml
+.airflow.env.backup
+.postgres.env
+Session.vim
+scheduler_logs.txt
+data/
+site/
+deprecated/
+compose.env
+airflow.db
+webserver_config.py

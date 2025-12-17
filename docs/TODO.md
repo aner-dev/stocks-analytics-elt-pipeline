@@ -1,3 +1,26 @@
+# uv script dependency drift
+
+## 🎯 Dependency Duplication Rationale (Astro CLI Context)
+
+In your current setup, duplicating dependencies between **`pyproject.toml`** and **`requirements.txt`** is **necessary** and **correct** to ensure your pipeline runs within the Airflow environment.
+
+### 1. The Conflict: Astro CLI vs. Modern Standards
+
+- **`pyproject.toml` (Modern Standard):** This defines dependencies for your Python **project** (local development, testing, tools like UV).
+- **`requirements.txt` (Historical Standard):** The **Astro CLI/Airflow Docker build process** *only* reads this file to install packages into the Airflow container. It ignores the modern `pyproject.toml` dependencies section.
+
+**Crucial Point:** If your project dependencies (like `duckdb`, `polars`, `structlog`) are not explicitly listed in **`requirements.txt`**, the Airflow container will start **without them**, leading to immediate runtime failures when your DAGs execute.
+
+### 2. Beyond Duplication: Necessary Additions
+
+The `requirements.txt` file also serves a secondary purpose by holding necessary **Airflow Providers** (e.g., `apache-airflow-providers-amazon`). These providers are essential for Airflow to recognize AWS Hooks and Operators and often aren't core dependencies of the pipeline project itself.
+
+### 💡 Long-Term Strategy (Addressing Dependency Drift)
+
+Duplicating dependencies creates **Dependency Drift** (a form of technical debt). The ideal solution is to maintain a **Single Source of Truth** in `pyproject.toml` and **automate the generation** of `requirements.txt`.
+
+- **Future Action:** Configure a build script (or use a dedicated `uv` command) to automatically sync or generate `requirements.txt` from your `pyproject.toml` file just before the Astro CLI initiates the Docker image build. This ensures consistency and eliminates manual duplication.
+
 # data engineering interview approaches
 
 - **product sense**

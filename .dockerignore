@@ -1,5 +1,48 @@
-astro
-.git
-.env
-airflow_settings.yaml
+# --- EXCLUSIONES CRÍTICAS PARA LA CACHÉ Y EL RENDIMIENTO ---
+
+# 1. VOLÚMENES PERSISTENTES Y CARPETAS DE DATOS (CRÍTICO)
+# Excluye directorios que contienen datos y logs generados por Docker/RustFS en el host.
+# Si estos cambian, la caché de Docker se rompe innecesariamente.
+data/
 logs/
+
+# 2. ENTORNO VIRTUAL Y CACHÉ DE PYTHON (CRÍTICO)
+# Excluye el entorno virtual (venv) y archivos temporales de Python.
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# 3. ARTEFACTOS GENERADOS LOCALMENTE Y METADATOS (CRÍTICO)
+# Evita el error de timestamp y la copia de carpetas de build pesadas.
+*.egg-info/
+src/*.egg-info/
+elt_pipeline_hn.egg-info/ 
+dist/
+build/
+
+# 4. INFRAESTRUCTURA OBSOLETA Y REDUNDANTE
+# Limpia los archivos de la arquitectura Localstack.
+localstack/
+localstack-init/
+docker/
+deprecated/
+
+# 5. CACHÉ DE TOOLS Y GIT
+# Excluye carpetas de caché de herramientas de desarrollo y Git.
+.git/
+.astro/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# 6. DOCUMENTACIÓN Y CONFIGURACIÓN LOCAL
+# Excluye la documentación generada y archivos de configuración del editor.
+site/
+mkdocs.yml
+Session.vim
+ty.toml
+.env
+docker-compose.env
+airflow_settings.yaml
+uv.lock

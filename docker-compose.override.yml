@@ -1,31 +1,48 @@
 # mount the dbt directory as a volume
 services:
   scheduler:
-    volumes:
-      - ./dbt:/usr/local/airflow/dbt
-  localstack:
-    image: localstack/localstack:latest
-    container_name: localstack
+    env_file:
+      - compose.env
+    command: bash -c "/usr/local/airflow/src/scripts/init_airflow.sh && airflow scheduler"
+    networks:
+      - airflow
+  rustfs:
+    image: rustfs/rustfs:1.0.0-alpha.69
+    container_name: rustfs
+    hostname: rustfs
     ports:
-      - "4566:4566"
-    environment:
-      # === AWS SERVICES ===
-      # S3: Data Storage (Data Lake)
-      # IAM: Authentication for Boto3/Hooks
-      # SQS/SNS: Event Decoupling and Notifications
-      # DYNAMODB: Metadata/State Store (NoSQL)
-      # LAMBDA: Serverless Processing
-      SERVICES: s3,iam,sqs,sns,lambda,dynamodb,secretsmanager
-      DEFAULT_REGION: us-east-1
-      PERSISTENCE: 1
+      - "9000:9000" # Puerto S3 API y Console
+      - "9001:9001" # Puerto para Observabilidad/Administración
     volumes:
-      - localstack_data:/var/lib/localstack
-      # Podman/Docker socket
-      # Asegúrate de que el path sea el correcto para tu configuración de Podman
-      # - /var/run/user/1000/podman/podman.sock:/var/run/docker.sock <- EX-CMD
-      - /run/user/{UID}/podman/podman.sock:/var/run/docker. # <- replaced for dynamic env variable ${UID}
-      - ./:/opt/code # bind mount
+      - rustfs_data:/data # Persistencia de los objetos S3
+      - ./logs/rustfs:/logs
+    restart: always
+    environment:
+      RUSTFS_ROOT_USER: rustfsadmin
+      RUSTFS_ROOT_PASSWORD: rustfsadmin
+    networks:
+      - airflow
+
+  stocks_dwh_service:
+    image: postgres:16
+    container_name: stocks_dwh_postgres
+    hostname: stocks_dwh_postgres
+    ports:
+      - "5433:5432"
+    environment:
+      # === DWH CREDENTIALS (PostgreSQL) ===
+      POSTGRES_USER: postgres # <-- LOGIN Airflow in UI
+      POSTGRES_PASSWORD: postgres # <-- PASSWORD Airflow in UI
+      POSTGRES_DB: stocks_dwh # <-- SCHEMA/DATABASE NAME in Airflow UI
+    volumes:
+      - stocks_dwh_postgres_data:/var/lib/postgresql/data # Persistencia de los datos
+    networks:
+      - airflow
 
 volumes:
-  localstack_data:
-    driver: local
+  stocks_dwh_postgres_data:
+  rustfs_data:
+
+networks:
+  airflow:
+    driver: bridge

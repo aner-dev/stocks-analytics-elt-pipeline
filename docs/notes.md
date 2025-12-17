@@ -1,3 +1,47 @@
+# Dockerfile (astro-cli)
+
+- change in Dockerfile:
+  '&& pip install --no-cache-dir -e /usr/local/airflow' to '&& pip install --no-cache-dir -e .'
+- reasoning:
+  - "The use of the period (.) in pip install -e . is the canonical instruction that gives pip the packaging context, resolving the ModuleNotFoundError
+
+## abstract
+
+- The period '.' tells pip to look for Python metadata (pyproject.toml or setup.py) in the Current Working Directory (WORKDIR, which in Astro is /usr/local/airflow).
+- By finding the metadata, pip can register the module with its logical name (elt_pipeline_hn) in the environment, allowing my DAG imports to work correctly, unlike the absolute path which only tries to install a directory without a package name."
+
+# streaming vs incremental loading
+
+i think that use incremental loading will be the correct approach instead of streaming
+i was wrong; here why:
+
+**Streaming** solves the immediate **RAM** problem during extraction.
+**Incremental Loading** is a separate, downstream task that optimizes **compute cost and processing time** after the data is safely loaded into the S3 Bronze Layer.
+
+- physical implementation: requests.stream
+
+## 🆚 Streaming vs. Incremental Loading: Design Rationale
+
+This principle clarifies the essential difference between optimizing **data transport efficiency** and optimizing **data content processing**.
+
+### 1. 🌊 Streaming (Transfer Efficiency)
+
+- **Primary Focus:** **I/O Transfer** and **RAM**.
+- **Definition:** A technique that moves data from source to destination (S3) in **small chunks** (`requests.stream`), rather than loading the entire file into memory at once.
+- **Technical Goal:** **Avoid Out-of-Memory (OOM)** errors caused by large files (like your 4.6 GB dataset) overloading the worker's RAM.
+- **Application to Your Pipeline:** The current implementation using `requests.stream` is the **correct and necessary solution** for **stability** in the **Extract (E)** stage.
+
+### 2. 📈 Incremental Loading (Content Logic)
+
+- **Primary Focus:** **Content** and **Processing Time/Cost**.
+- **Definition:** A logical strategy used to **filter and process only the new or modified records** since the previous pipeline run.
+- **Technical Goal:** **Reduce the total volume of data** that the compute engine (DuckDB) must handle, saving time and CPU costs.
+- **Application to Your Pipeline:** This logic should be implemented in the **Transformation (T) Layer** (e.g., using DuckDB). The strategy is: **load the full snapshot via Streaming to S3, then filter for new records in the Silver layer.**
+
+______________________________________________________________________
+
+**Conclusion:**
+
 # 9th october
 
 ## change the scope of the project
@@ -126,3 +170,29 @@
 
 - FP for the logic:
 - OOP for the structure:
+
+# uv
+
+- uv add vs uv pip install / high-level vs low-level
+- uv add
+  - pyproject.toml as source of truth
+  - one cmd pipeline: add pkg dependency to pyproject.toml -> uv lock -> uv sync
+- uv pip install
+  - install pkg directly in the venv
+  - doesn't do the 'one cmd pipeline'
+
+# dbt (data build tool)
+
+- dbt context-tree:
+  hn_dbt/
+  ├── dbt_project.yml (Configuración global)
+  ├── profiles.yml (Configuración de conexión - está en ~/.dbt)
+  ├── models/
+  │ ├── staging/ ⬅️ 1. Limpieza de datos crudos (Fuentes)
+  │ │ └── stg_hn_items.sql
+  │ ├── intermediate/ ⬅️ 2. Lógica compleja/join de staging (Opcional)
+  │ │ └── int_hn_users_enriched.sql
+  │ └── marts/ ⬅️ 3. Modelos de Negocio/Analíticas (Consumo final)
+  │ ├── marts_hn_daily_stats.sql
+  │ └── marts_hn_top_stories.sql
+  └── sources.yml ⬅️ Define las tablas cargadas por Python.

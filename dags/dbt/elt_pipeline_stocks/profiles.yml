@@ -1,0 +1,16 @@
+# dags/dbt/stocks_dbt_project/dbt_project.yml
+name: "stocks_dbt_project"
+version: "1.0.0"
+config-version: 2
+
+# Nombre del perfil de conexión que Cosmos mapeará
+profile: "stocks_dbt_project"
+
+model-paths: ["models"]
+source-paths: ["models"] # dbt buscará 'sources.yml' aquí
+
+models:
+  stocks_dbt_project:
+    materialized: view
+    staging:
+      materialized: view

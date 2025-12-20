@@ -1,4 +1,9 @@
+# dag_silver_layer.py
+# FIXME: merge issue in PR/pull request in github (pyproject.toml & uv.lock)
+# TODO: create dag_gold_layer.py and finish dbt/data modeling phase
+
 from airflow.decorators import dag, task
+from airflow.sdk.definitions.asset import Asset as Dataset
 from datetime import datetime, timedelta
 import structlog
 
@@ -12,11 +17,6 @@ from src.aws.boto_client import ensure_bucket_exists
 from src.transform.silver_loader import transform_and_load_silver
 from src.config.settings import S3_BUCKET
 
-
-# --- DBT / COSMOS ---
-from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig
-from cosmos.profiles import PostgresUserPasswordProfileMapping
-
 log = structlog.get_logger()
 
 # --- CONFIGURATION CONSTANTS ---
@@ -24,6 +24,9 @@ POSTGRES_CONN_ID = "postgres_stocks_dwh"
 DBT_PROJECT_NAME = "elt_pipeline_stocks"
 DBT_PROJECT_PATH = "/usr/local/airflow/dags/dbt/elt_pipeline_stocks"
 DBT_EXECUTABLE_PATH = "dbt"
+STOCKS_SILVER_DATASET = Dataset(
+    "postgres://localhost/stocks_dwh/stocks/stg_weekly_adjusted_prices"
+)
 
 
 @dag(
@@ -94,13 +97,17 @@ def alpha_vantage_silver_layer():
     def transform_and_load_silver_task(key: str, conn_id: str) -> None:
         transform_and_load_silver(key=key, conn_id=conn_id)
 
+    @task(outlets=[STOCKS_SILVER_DATASET])
+    def notify_silver_completed(upstream_results):
+        return "Ready for Gold!"
+
     # --- Extraction ---
     extracted_data = extract_raw_data.expand(
         symbol=symbols_payload.map(lambda x: x["symbol"]),
         base_url=symbols_payload.map(lambda x: x["base_url"]),
         api_params=symbols_payload.map(lambda x: x["api_params"]),
     )
-    symbols_payload >> extracted_data
+    [db_setup, s3_setup] >> extracted_data
 
     # --- Validation ---
     validated_data = validate_raw_payload_task.expand(extracted_data=extracted_data)
@@ -109,35 +116,11 @@ def alpha_vantage_silver_layer():
     loaded_bronze = load_to_bronze.expand(extracted_data=validated_data)
 
     # --- Silver Load ---
-    loaded_silver = transform_and_load_silver_task.expand(
+    silver_results = transform_and_load_silver_task.expand(
         key=loaded_bronze.map(lambda x: x["key"]),
         conn_id=[POSTGRES_CONN_ID],
     )
-
-    # ------------------------------------------------------------
-    # PHASE 3 — GOLD (DBT)
-    # ------------------------------------------------------------
-
-    profile_config = ProfileConfig(
-        profile_name=DBT_PROJECT_NAME,
-        target_name="dev",
-        profile_mapping=PostgresUserPasswordProfileMapping(
-            conn_id=POSTGRES_CONN_ID,
-            profile_args={"schema": "marts"},
-        ),
-    )
-
-    gold_layer_dbt = DbtTaskGroup(
-        group_id="dbt_gold_layer_modeling",
-        project_config=ProjectConfig(dbt_project_path=DBT_PROJECT_PATH),
-        profile_config=profile_config,
-        execution_config=ExecutionConfig(dbt_executable_path=DBT_EXECUTABLE_PATH),
-        default_args={
-            "task_args": {"dbt_cli_flags": ["--target", "dev", "--models", "tag:gold"]}
-        },
-    )
-
-    loaded_silver >> gold_layer_dbt
+    notify_silver_completed(silver_results)
 
 
 alpha_vantage_silver_layer()

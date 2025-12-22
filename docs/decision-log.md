@@ -1,68 +1,82 @@
-# pydantic 
+# pydantic
+
 - use pydantic as data quality tool
-# elt as pip package 
+
+# elt as pip package
+
 - eliminate the dependency on the execution location (working directory)
 - and allow any file to import any other file consistently, as if everything were in a central library.
 - problem: resolving the root module dependency $PYTHONPATH
 - solution: install the project as a Python package in editable mode (uv pip install -e .)
   - which avoids the need to manually manipulate the $PYTHONPATH based on the *current working directory*.
-  - absolute imports regardless of where the code is executed 
-# focus change to alpha vantage API 
-- proyect evolutions from static dataset (data.gov) for a constant ingest of data  
-  - reasons: find limitations when trying to expand the scope of the project 
+  - absolute imports regardless of where the code is executed
+
+# focus change to alpha vantage API
+
+- proyect evolutions from static dataset (data.gov) for a constant ingest of data
+  - reasons: find limitations when trying to expand the scope of the project
 
 # extract data
-- extract.py created for dataset from data.gov 
-- api.env & db.env 
-  - management with environment variables 
-- db_connection.py 
+
+- extract.py created for dataset from data.gov
+- api.env & db.env
+  - management with environment variables
+- db_connection.py
   - implementing manual connection to PostgreSQL database
+
 ## benchmarking
+
 - polars choosed for performance optimization at reading the csv
   - refer to benchmarking.md for implementation details
-## documentation 
-- switched from mkdocs to mkdocs-material 
-# why use minIO 
-- what problem i solve using a minIO bucket? 
-- reasons for incorporate a minIO bucket in the architecture: 
-- re-processing: if Transform logic changes, re-read from minIO without call API again 
-MinIO acts as a resilient staging layer, ensuring data durability and operational reliability.
+
+## documentation
+
+- switched from mkdocs to mkdocs-material
+
+# why use minIO
+
+- what problem i solve using a minIO bucket?
+- reasons for incorporate a minIO bucket in the architecture:
+- re-processing: if Transform logic changes, re-read from minIO without call API again
+  MinIO acts as a resilient staging layer, ensuring data durability and operational reliability.
 
 1. Fault Tolerance & Recovery
-If transformation fails, raw data persists in MinIO
-Enables reprocessing without API re-calls
+   If transformation fails, raw data persists in MinIO
+   Enables reprocessing without API re-calls
 
-2. Data Quality & Debugging
-Keep original data snapshots for validation
-Compare raw vs transformed data for debugging
+1. Data Quality & Debugging
+   Keep original data snapshots for validation
+   Compare raw vs transformed data for debugging
 
-3. Historical Tracking
-Maintain versioned raw data for audit trails
-Support historical reprocessing when business logic changes
+1. Historical Tracking
+   Maintain versioned raw data for audit trails
+   Support historical reprocessing when business logic changes
 
-4. Pipeline Resilience
-Decouples extraction from transformation
-Prevents data loss during pipeline failures
-Enables backfilling and batch reprocessing
+1. Pipeline Resilience
+   Decouples extraction from transformation
+   Prevents data loss during pipeline failures
+   Enables backfilling and batch reprocessing
 
-# docker 
-- what problem i solve using docker compose? 
+# docker
+
+- what problem i solve using docker compose?
 - docker engine
-# transformation & data types 
-- postgreSQL can't read efficiently .parquet files to fill their tables 
-- because .parquet is *column oriented* and psql is row-oriented 
-- however, the temporal type transformation to parquet in T1 is a worth-it trade-off 
+
+# transformation & data types
+
+- postgreSQL can't read efficiently .parquet files to fill their tables
+- because .parquet is *column oriented* and psql is row-oriented
+- however, the temporal type transformation to parquet in T1 is a worth-it trade-off
 - duckdb & polars are columnar engines; reading Parquet is significantly faster and cheaper than reading CSV for complex transformations.
-## monitoring 
-- added monitoring through metadata dictionaries 
-- improvements: 
+
+## monitoring
+
+- added monitoring through metadata dictionaries
+- improvements:
   - better interaction between pipeline and monitoring systems & tools (like Graphana, Prometheus)
-  - better logging 
+  - better logging
 
+# dynamic mapping and API rate limiting
 
-
-
-
-
-
-
+version 1: "Implemented a sequential ingestion strategy using Airflow Dynamic Mapping and controlled delays to stay within Alpha Vantage’s 5 RPM limit, effectively eliminating 429 errors and ensuring 100% pipeline reliability."
+version 2: "To comply with Alpha Vantage’s free tier limits (5 RPM), I implemented a Sequential Task Mapping strategy in Airflow by setting max_active_tis_per_dag=1 combined with a controlled 25-second delay between tasks. This ensures pipeline integrity and prevents 429 (Too Many Requests) errors while maintaining a reliable data ingestion flow."

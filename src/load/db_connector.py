@@ -1,5 +1,4 @@
-# src/load/db_load_silver.py (Final version compatible with Airflow Hook)
-
+# db_connector.py
 import polars as pl
 from psycopg2 import extras
 
@@ -11,7 +10,7 @@ import structlog
 log = structlog.get_logger()
 
 # --- CONFIGURATION (CONSTANTS) ---
-SILVER_TABLE = "weekly_adjusted_stocks"
+TABLE_NAME = "weekly_adjusted_prices"
 SCHEMA_NAME = "stocks"
 AUDIT_TABLE = f"{SCHEMA_NAME}.pipeline_audit"  # Using the schema constant
 
@@ -40,7 +39,7 @@ def load_dataframe_to_db(df_clean: pl.DataFrame, symbol: str, conn_id: str) -> i
         columns = df_clean.columns
         columns_str = ", ".join(columns)
 
-        table_full_name = f"{SCHEMA_NAME}.{SILVER_TABLE}"
+        table_full_name = f"{SCHEMA_NAME}.{TABLE_NAME}"
         insert_query = f"INSERT INTO {table_full_name} ({columns_str}) VALUES %s ON CONFLICT DO NOTHING"
 
         # 3. Bulk Insert

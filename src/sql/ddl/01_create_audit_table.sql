@@ -1,4 +1,5 @@
--- sql/ddl/02_create_table_pipeline_audit.sql 
+-- sql/ddl/create_audit_table.sql 
+--
 
 CREATE TABLE IF NOT EXISTS stocks.pipeline_audit (
     audit_id SERIAL PRIMARY KEY,

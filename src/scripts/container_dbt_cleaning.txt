@@ -1,0 +1,31 @@
+python3 -c "
+import psycopg2
+try:
+    # Nos conectamos usando la red de Docker (nombre del servicio)
+    conn = psycopg2.connect('postgresql://postgres:postgres@stocks_dwh_postgres:5432/stocks_dwh')
+    cur = conn.cursor()
+    
+    # Buscamos tablas que dbt deja huérfanas al fallar
+    query = \"\"\"
+        SELECT schemaname, tablename 
+        FROM pg_tables 
+        WHERE tablename LIKE '%__dbt_backup' 
+           OR tablename LIKE '%__dbt_tmp'
+    \"\"\"
+    cur.execute(query)
+    tables = cur.fetchall()
+    
+    if not tables:
+        print('✅ No se encontraron tablas residuales de dbt.')
+    else:
+        for schema, table in tables:
+            print(f'Borrando tabla: {schema}.{table}')
+            cur.execute(f'DROP TABLE IF EXISTS {schema}.{table} CASCADE;')
+        conn.commit()
+        print(f'✅ Limpieza completada. Se borraron {len(tables)} tablas.')
+    
+    cur.close()
+    conn.close()
+except Exception as e:
+    print(f'❌ Error conectando a la base de datos: {e}')
+"

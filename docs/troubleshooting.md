@@ -1,4 +1,23 @@
-# podman astronomer
+# astronomer
+
+## mount shadowing
+
+how a local dir (bind mount) can 'cover' files in docker/podman
+
+## asset granularity
+
+mapping airflow @tasks with 'outlets' argument generate too much triggers (DAG runs in airflow UI)
+
+## fan-in pattern
+
+use a 'close task' to consolidate results
+see 'notify_silver_completed(silver_results)' in *dag_silver_layer.py*
+
+## cosmos virtualenvs
+
+isolate dbt to avoid path conflicts
+
+## podman astronomer
 
 - LocalStack sigue exited a pesar de chmod 666 en socket Podman.
 - Siguiente paso: correr astro dev logs localstack --exit para ver la causa de la salida o comentar temporalmente el montaje del socket en el compose para descartar que sea la causa del fallo de arranque.

@@ -1,8 +1,9 @@
 [project]
-name = "elt_pipeline_hn"
+name = "elt_pipeline_stocks"
 version = "0.1.0"
 requires-python = ">= 3.12, <3.14"
 dependencies = [
+  "apache-airflow>=2.10.0",
   "apache-airflow-providers-amazon>=9.18.0",
   "apache-airflow-providers-postgres>=6.5.0",
   "astronomer-cosmos~=1.11.0",

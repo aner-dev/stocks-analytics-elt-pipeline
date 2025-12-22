@@ -1,0 +1,51 @@
+# dimensions.yml
+# contract of quality and truth
+# guarantee referential integrity & star schema correct appliaction
+
+version: 2
+models:
+  # =======================================================
+  # DIMENSIONS (DIM)
+  # =======================================================
+  - name: dim_date
+    description: >
+      Time dimension table that contains attributes for weekly granularity.
+      Used to filter and group pricing data by time.
+    columns:
+      # PRIMARY KEY (PK) Test
+      - name: date_id
+        description: Primary key of the time dimension (surrogate key).
+        tests:
+          - unique
+          - not_null
+      # Business Keys/Attributes Tests
+      - name: week_ending
+        description: The date marking the end of the trading week (usually Friday).
+        tests:
+          - not_null
+          # Ensures the date is within a reasonable range (e.g., 2000-2030)
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: "'1900-01-01'"
+                max_value: "'2050-12-31'"
+
+  - name: dim_stock
+    description: >
+      Stock dimension table. Contains metadata for companies and their tickers.
+      Column names are standardized for analytical consumption.
+    columns:
+      # PRIMARY KEY (PK) Test
+      - name: stock_id
+        description: Primary key of the stock dimension (surrogate key).
+        tests:
+          - unique
+          - not_null
+      # Business Key (BK) Test
+      - name: symbol
+        description: Stock ticker (e.g., AAPL).
+        tests:
+          - unique # Must be unique
+          - not_null # Cannot be null
+          - dbt_expectations.expect_column_values_to_match_regex:
+              arguments:
+                regex: "^[A-Z0-9]+$" # Ensures it is a valid ticker (uppercase letters/numbers)

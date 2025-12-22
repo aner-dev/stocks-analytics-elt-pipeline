@@ -33,10 +33,8 @@ def extract_stocks_data(
         # "Connection": "close"  # OPTIONAL - try without this first
     }
     try:
-        log.info(
-            "Applying 20-second rate limit delay.", symbol=symbol
-        )  # Dejamos el log original para ver si se carga
-        time.sleep(65)
+        log.info("Applying 20-second rate limit delay.", symbol=symbol)
+        time.sleep(25)
 
         session = requests.Session()
         retries = Retry(

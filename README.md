@@ -8,22 +8,34 @@ The solution leverages the popular integration of **Apache Airflow**, **dbt**, a
 
 ## 🎯 Objective and Architecture
 
-### **1. Core Architectural Flow**
-
-The pipeline is structured using a three-layer data design (Bronze, Silver, Gold), orchestrated through two sequential Airflow DAGs.
+### 🏗 Data Pipeline Architecture
 
 ```mermaid
 graph TD
-    A[Source: External Stock API] --> B(Ingestion / E);
-    B --> C{Bronze Layer: Raw Data};
-    C --> D[Airflow DAG 1: Silver Processing];
-    D --> E(Polars: Cleaning, Casting, Keys);
-    E --> F{Silver Layer: Cleaned Data in DWH};
-    F --> G[Airflow DAG 2: Gold Modeling (Cosmos)];
-    G --> H(dbt: Dimensional Modeling);
-    H --> I{Gold Layer: Star Schema (fact_prices, dim_symbol)};
-    I --> J[BI / Analytics];
+    subgraph External_Sources
+        AV[Alpha Vantage API]
+    end
 
-    style A fill:#f9f,stroke:#333
-    style I fill:#ccf,stroke:#333
+    subgraph Infrastructure_Docker
+        RFS[(RustFS S3 Storage)]
+        DWH[(PostgreSQL: stocks_dwh)]
+    end
+
+    subgraph DAG_Silver_Layer [Orchestrated by Airflow]
+        E[Extract: Python] --> V[Validate: Data Quality]
+        V --> L[Load Bronze: JSON in RustFS]
+        L --> T[Transform: Polars]
+        T --> S[Load Silver: Postgres]
+    end
+
+    subgraph DAG_Gold_Layer [Orchestrated by Cosmos/dbt]
+        G1[dbt Models: Star Schema]
+        G2[dbt Tests: Expectations]
+    end
+
+    AV --> E
+    L -.-> RFS
+    S -.-> DWH
+    S -- "Trigger: STOCKS_SILVER_DATASET" --> DAG_Gold_Layer
+    DWH --> G1
 ```

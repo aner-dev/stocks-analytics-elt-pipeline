@@ -1,35 +1,14 @@
-name: "stocks_dbt_project"
+# dbt_project.yml - VERSIÓN CORREGIDA
+name: elt_pipeline_stocks
 version: "1.0.0"
 config-version: 2
-# The profile name must match the 'profile_name' in Cosmos' ProfileConfig.
-# Both must be 'stocks_dbt_project'
-profile: "stocks_dbt_project"
 
-# dbt directories (Ensure these paths are correct)
+profile: elt_pipeline_stocks
+
 model-paths: ["models"]
-seed-paths: ["seeds"]
-test-paths: ["tests"]
-analysis-paths: ["analyses"]
 macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
-
-target-path: "target" # Directory for dbt's compilation output
-clean-targets: # Files to clean with 'dbt clean'
-  - "target"
-  - "dbt_packages"
+test-paths: ["tests"]
 
 models:
-  # Default configuration for all models
-  stocks_dbt_project:
-    # By default, all models will be materialized as 'views'
-    # You can change it to 'table' for performance, but 'view' is faster in development.
-    +materialized: view
-
-    # Defines the schemas where dbt should build the models
-    # We want to build the Gold models in a schema called 'marts'
-    marts:
-      +schema: marts
-
-    # Staging models (intermediate layer) will be built in a schema called 'staging'
-    staging:
-      +schema: staging
+  elt_pipeline_stocks:
+    +materialized: table

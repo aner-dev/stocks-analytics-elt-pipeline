@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: stg_weekly_adjusted_prices
+    columns:
+      - name: stock_symbol
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_match_regex:
+              arguments:
+                regex: "^[A-Z0-9]+$"
+
+      - name: trade_date
+        tests:
+          - not_null
+
+      - name: adjusted_close_price
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                row_condition: "adjusted_close_price is not null"
+
+      - name: trade_volume
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                row_condition: "trade_volume is not null"

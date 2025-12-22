@@ -30,6 +30,7 @@ def standardize_and_clean_df(
     # improve legibility and avoid unnecesary verbosity on syntax & code
     df = df.rename(
         {
+            "timestamp": "price_date",
             "1. open": "open",
             "2. high": "high",
             "3. low": "low",
@@ -59,7 +60,7 @@ def standardize_and_clean_df(
                 pl.col("close").cast(pl.Float64, strict=False),
                 pl.col("adjusted_close").cast(pl.Float64, strict=False),
                 pl.col("volume").cast(pl.Int64, strict=False),
-                pl.col("timestamp").str.strptime(pl.Date, "%Y-%m-%d"),
+                pl.col("price_date").str.strptime(pl.Date, "%Y-%m-%d"),
             ]
         )
         .filter(
@@ -69,7 +70,7 @@ def standardize_and_clean_df(
         )
         .select(
             [
-                "timestamp",
+                "price_date",
                 "symbol",
                 "open",
                 "high",
@@ -82,7 +83,7 @@ def standardize_and_clean_df(
                 "_processing_date",
             ]
         )
-        .sort("timestamp")
+        .sort("price_date")
     )
 
     return df_clean, initial_rows

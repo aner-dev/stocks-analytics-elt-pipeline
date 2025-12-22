@@ -1,0 +1,55 @@
+# facts.yml
+# =======================================================
+# FACTS (FACT TABLE)
+# =======================================================
+version: 2
+models:
+  - name: fact_adjusted_prices
+    description: >
+      The granularity is Stock x Week.
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [stock_id, date_id]
+
+    columns:
+      # FOREIGN KEY (FK) Tests (Referential Integrity)
+      - name: stock_id
+        description: Foreign key to the dim_stock table.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_stock')
+                field: stock_id
+
+      - name: date_id
+        description: Foreign key to the dim_date table.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_id
+
+      # PRIMARY KEY Composition Test
+      - name: composite_key
+        description: "Composed of stock_id and date_id. Cannot have duplicates."
+
+      # Metric Tests (Business Validation)
+      - name: adjusted_close_price
+        description: Adjusted closing price. Main metric.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+
+      - name: trade_volume
+        description: Weekly trading volume.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_min_to_be_between:
+              arguments:
+                min_value: 0

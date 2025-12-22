@@ -1,0 +1,3 @@
+{% macro generate_database_name(custom_database_name, node) -%}
+    {{ target.database }}
+{%- endmacro %}

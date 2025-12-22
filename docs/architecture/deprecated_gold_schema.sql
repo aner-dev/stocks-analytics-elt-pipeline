@@ -1,4 +1,4 @@
-
+-- gold_schema.sql 
 -- date dimension 
 CREATE TABLE dim_date (
   date_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

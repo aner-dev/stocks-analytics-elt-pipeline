@@ -1,1 +1,44 @@
-¡Absolutamente! Entiendo la frustración de perder contexto en interacciones largas.Aquí tiene un Súper Prompt Detallado que encapsula toda nuestra interacción, configuraciones técnicas, errores, y las soluciones aplicadas. Está estructurado para que cualquier asistente Gemini pueda tomar el relevo inmediatamente.Guarde este texto y úselo como punto de partida en su próxima sesión.🚀 Súper Prompt de Contexto para Continuidad (Alpha Vantage Data Pipeline)I. 🎯 Objetivo Principal del UsuarioEl usuario es un Data Engineer Junior que está desarrollando un Portafolio de Proyecto ETL/ELT de datos bursátiles (Stocks) utilizando Alpha Vantage, DBT Core y S3-compatible storage. El objetivo es lograr una ejecución exitosa de la DAG alpha_vantage_silver_layer.II. 🛠️ Entorno de Desarrollo y Stack TecnológicoComponenteConfiguración/DetallesSistema Operativo (Host)Artix Linux (con OpenRC, no systemd).ContenedoresPodman (en lugar de Docker).OrquestadorAstro CLI (astro dev start) con Astronomer Runtime 3.1-7 (basado en Airflow 3.1.3).Ejecutor de AirflowLocalExecutor.DAGs/ELTUso de cosmos (DBT Orchestration) para ejecutar modelos.Almacenamiento (Raw)RustFS (un S3-compatible service) en el puerto 9000.Data Warehouse (DWH)PostgreSQL (Servicio stocks_dwh_service).Lenguaje/HerramientasPython (requests, structlog), time.sleep().III. ⚙️ Configuraciones Críticas del EntornoScript de Inicialización (init_airflow.sh):Crea la conexión postgres_stocks_dwh.Crea un bucket S3 llamado stocks-data en el servicio RustFS.Estado Actual: Se ha actualizado para usar la nueva API Key.Clave API de Alpha Vantage (Actual):Variable de Airflow: alpha_vantage_api_key $\\rightarrow$ YELVS772CHCMKLEK (Nueva clave).Conexión de Airflow: alpha_vantage_default $\\rightarrow$ Creada (aunque el código Python usa la Variable, se añadió por robustez).Código de Extracción (alpha_extract.py):Utiliza Variable.get("alpha_vantage_api_key").Implementa un time.sleep(65) para evitar límites de frecuencia.Implementa requests.get(..., timeout=45) para evitar timeouts del cliente.La lógica de logging es con structlog y captura errores con try/except requests.RequestException as e:.IV. 🛑 Historial de Troubleshooting y Errores ResueltosEtapaError o Problema InicialCausa y Solución Aplicada1. Logs PerdidosAirflow UI mostraba "No event found" y solo logs del Scheduler.Problema de Directorios: Los logs sí se escribían, pero la ruta era inusual (Airflow 3.x Task Mapping). Se accedió directamente por astro dev bash en la ruta: /usr/local/airflow/logs/dag_id=.../run_id=.../task_id=.../map_index=0/attempt=X.log.2. Falso PositivoSimulación de Python falló con: conn_id 'alpha_vantage_default' isn't defined.Diagnóstico Erróneo: El código de debugging intentaba usar BaseHook. Se confirmó que el código real usa Variable.get(), por lo que la conexión alpha_vantage_default no era estrictamente necesaria, pero se añadió para completar el setup.3. Error CríticoEl log de la tarea mostró: "error_message": "Other API request error: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))".Fallo del Servidor/Clave: Se descartó el rate limit y el client timeout (gracias a timeout=45). El fallo es del servidor de Alpha Vantage. Causa más probable: La clave API original (NW35VP51I8YI9KYV) era inválida o estaba bloqueada.4. Solución ActualAplicación de la nueva clave.Acción: El usuario ha actualizado init_airflow.sh con la nueva clave YELVS772CHCMKLEK y ha iniciado un astro dev restart.V. ❓ Estado Actual y Próximo Paso EsperadoEstado: El entorno acaba de ser reiniciado (astro dev restart) con la nueva clave API.Próximo Paso Esperado: El usuario va a disparar la DAG Run nuevamente.El asistente debe estar listo para:Preguntar por el resultado de la nueva ejecución de la DAG.Si falla, analizar el nuevo log de error (attempt=X.log) en la ruta: /usr/local/airflow/logs/dag_id=alpha_vantage_silver_layer/run_id=.../task_id=extract_raw_data/map_index=0/ para encontrar el siguiente error (podría ser un JSONDecodeError si el servidor devuelve un HTML/texto de error, o un ValueError si hay un Error Message JSON).Asistente Gemini, le cedo el control. Por favor, pregunte al usuario por el resultado de la ejecución de la DAG con la nueva clave API.
+Entiendo perfectamente. Después de esta batalla contra los "puntos extra", las macros y las configuraciones contradictorias entre Cosmos y dbt, necesitas un punto de partida sólido que no te haga perder tiempo mañana.
+
+Aquí tienes el Super Prompt diseñado para que cualquier IA avanzada (como yo o cualquier otra) entienda la arquitectura exacta, los errores superados y el estado actual del proyecto sin que tengas que explicarlo todo de nuevo.
+
+Super Prompt: Continuación de Pipeline ELT (Airflow + Cosmos + dbt)
+Contexto del Proyecto: Estoy desarrollando un pipeline ELT sobre Astro SDK (Airflow).
+
+Capa Bronze/Silver: Procesada con Polars cargando datos desde S3 (RustFS) a Postgres (contenedor Docker stocks_dwh_postgres).
+
+Capa Gold/Transformación: Usando dbt 1.10.17 a través de Astronomer Cosmos.
+
+Infraestructura: Todo corre en Docker. La base de datos es stocks_dwh, el usuario es postgres.
+
+Estado Actual y Soluciones Aplicadas: Hemos superado el error improper relation name (too many dotted names) que causaba que dbt intentara crear tablas con nombres de 4 partes (ej: db.schema.schema.table). Las medidas definitivas tomadas son:
+
+dbt_project.yml: Configurado con quoting: {database: false, schema: false, identifier: false}.
+
+Jerarquía de Esquemas:
+
+El esquema base en el ProfileConfig del DAG es stocks.
+
+Se usa una macro personalizada generate_schema_name.sql para evitar que dbt concatene el esquema del perfil con el del modelo (evitando que stocks + gold resulte en stocks_gold).
+
+Macro de Limpieza: Se implementó un override en generate_schema_name que devuelve custom_schema_name a secas. Se eliminó cualquier macro que alterara el database_name para evitar errores de NoneType.
+
+Conexión: Se usa PostgresUserPasswordProfileMapping en el DAG, pasando explícitamente dbname: "stocks_dwh" y schema: "stocks" en profile_args. El archivo profiles.yml físico fue eliminado para evitar conflictos con el perfil dinámico de Cosmos.
+
+Configuración Técnica Relevante:
+
+Ruta dbt: dags/dbt/elt_pipeline_stocks
+
+Modelos: Ubicados en models/staging/ (esquema stocks) y models/gold/ (esquema gold).
+
+DAG Airflow: Usa DbtDag con ExecutionMode.LOCAL y un virtualenv dedicado para dbt.
+
+Objetivo de la Sesión de Hoy: Necesito avanzar con [INSERTAR TAREA AQUÍ: ej. crear el modelo dim_stock / corregir tests de dbt_expectations / optimizar el DAG].
+
+Instrucciones para la IA:
+
+Mantén la consistencia con el uso de la macro generate_schema_name para no romper la resolución de nombres de Postgres.
+
+No sugieras cambios que vuelvan a activar el quoting o que alteren el target.database en los perfiles.
+
+Ten en cuenta que los modelos de staging deben leer de la tabla weekly_adjusted_prices que Polars ya creó en el esquema stocks

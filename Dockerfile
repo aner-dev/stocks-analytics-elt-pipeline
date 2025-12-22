@@ -1,34 +1,24 @@
-# Usa el runtime base de Astronomer (Airflow 2.x, Python 3.12).
 FROM astrocrpublic.azurecr.io/runtime:3.1-7
 
-# --- 1. CONFIGURACIÓN DEL USUARIO ---
-# El usuario predeterminado en Astro Runtime es 'astro'.
 USER astro
 
-# --------------------------------------------------------------------------
-# --- 2. INSTALACIÓN DE DEPENDENCIAS DE PYTHON (ALTA CACHÉ Y VELOCIDAD) ---
-# Paso CRÍTICO para la velocidad: Copia SOLO el archivo de dependencias de runtime.
-COPY requirements.txt .
+# 1. Crear el venv e instalar dbt con pip optimizado
+RUN python -m venv dbt_venv && \
+  dbt_venv/bin/pip install --no-cache-dir --upgrade pip && \
+  dbt_venv/bin/pip install --no-cache-dir dbt-postgres dbt-core
 
-# Ejecuta la instalación.
+# 2. Instalar dependencias de Airflow
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --------------------------------------------------------------------------
-
-# --- 3. COPIA E INSTALACIÓN EDITABLE DEL CÓDIGO (BAJA CACHÉ) ---
-
-# Paso de Copia: Mantiene la propiedad 'astro:astro'.
+# 3. Copiar el proyecto
 COPY --chown=astro:astro . .
 
-# --------------------------------------------------------------------------
-# --- CORRECCIÓN CRÍTICA DE PERMISOS ---
-# Si la instalación falla por permisos, forzamos la propiedad del directorio
-# de trabajo al usuario 'astro' usando 'root'.
-# Esto garantiza que el usuario 'astro' pueda escribir los metadatos de instalación.
-USER root
-RUN chown -R astro:astro /usr/local/airflow
-USER astro
-# --------------------------------------------------------------------------
+# 4. PASO CLAVE: Ejecutar dbt deps durante el build
+# Si esto falla, el log de la terminal te dirá EXACTAMENTE qué falta
+WORKDIR /usr/local/airflow/dags/dbt/elt_pipeline_stocks
+RUN /usr/local/airflow/dbt_venv/bin/dbt deps
 
-# Instala el proyecto como un paquete editable.
+# 5. Instalación editable
+WORKDIR /usr/local/airflow
 RUN pip install -e .

@@ -1,0 +1,33 @@
+#models/staging/sources.yml
+version: 2
+
+sources:
+  - name: stocks_silver_layer # dbt alias
+    description: "Silver layer loaded by Airflow + Polars"
+    schema: stocks
+    tables:
+      - name: weekly_adjusted_prices
+        description: "Weekly stock prices after Silver transformations"
+        columns:
+          - name: price_date
+            description: Week ending date
+            tests:
+              - not_null
+
+          - name: symbol
+            description: Stock ticker symbol
+            tests:
+              - not_null
+
+          - name: adjusted_close
+            description: Adjusted close price
+            tests:
+              - not_null
+
+          - name: volume
+            description: Weekly trading volume
+            tests:
+              - not_null
+              - dbt_expectations.expect_column_values_to_be_of_type:
+                  arguments:
+                    column_type: BIGINT

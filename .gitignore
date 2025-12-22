@@ -79,3 +79,10 @@ airflow.db
 webserver_config.py
 ty.toml
 *.jsonc
+
+# ==================================
+# 8. DBT 
+# ==================================
+dags/dbt/elt_pipeline_stocks/dbt_packages/
+dags/dbt/elt_pipeline_stocks/target/
+dags/dbt/elt_pipeline_stocks/logs/

@@ -23,16 +23,16 @@ log = structlog.get_logger()
 POSTGRES_CONN_ID = "postgres_stocks_dwh"
 DBT_PROJECT_NAME = "elt_pipeline_stocks"
 DBT_PROJECT_PATH = "/usr/local/airflow/dags/dbt/elt_pipeline_stocks"
-DBT_EXECUTABLE_PATH = "dbt"
+DBT_EXECUTABLE_PATH = "/usr/local/airflow/dbt_venv/bin/dbt"
 STOCKS_SILVER_DATASET = Dataset(
-    "postgres://localhost/stocks_dwh/stocks/stg_weekly_adjusted_prices"
+    "postgres://stocks_dwh_postgres:5432/stocks_dwh/stocks/weekly_adjusted_prices"
 )
 
 
 @dag(
     dag_id="alpha_vantage_silver_layer",
     start_date=datetime(2025, 1, 1),
-    schedule="@weekly",
+    schedule=None,
     catchup=False,
     tags=["elt", "alpha_vantage", "finance", "stocks", "mapped", "dbt"],
     default_args={
@@ -68,7 +68,7 @@ def alpha_vantage_silver_layer():
     # PHASE 2 — ELT (MAPPED PER SYMBOL)
     # ------------------------------------------------------------
 
-    @task
+    @task(max_active_tis_per_dag=1, retries=3, retry_delay=timedelta(seconds=30))
     def extract_raw_data(
         base_url: str,
         api_params: dict,

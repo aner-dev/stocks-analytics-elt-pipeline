@@ -61,4 +61,7 @@ airflow connections add 'alpha_vantage_default' \
   --conn-password 'YELVS772CHCMKLEK'
 echo "✅ Connection 'alpha_vantage_default' created."
 
+airflow pools set alpha_vantage_api 1 "Limit calls to Alpha Vantage to 1 at a time"
+echo "✅ Pool 'alpha_vantage_api' created with 1 slot."
+
 echo "Initial Airflow configuration completed. Starting Scheduler..."

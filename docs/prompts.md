@@ -1,10 +1,7 @@
-Entiendo perfectamente. Después de esta batalla contra los "puntos extra", las macros y las configuraciones contradictorias entre Cosmos y dbt, necesitas un punto de partida sólido que no te haga perder tiempo mañana.
-
-Aquí tienes el Super Prompt diseñado para que cualquier IA avanzada (como yo o cualquier otra) entienda la arquitectura exacta, los errores superados y el estado actual del proyecto sin que tengas que explicarlo todo de nuevo.
-
 Super Prompt: Continuación de Pipeline ELT (Airflow + Cosmos + dbt)
 Contexto del Proyecto: Estoy desarrollando un pipeline ELT sobre Astro SDK (Airflow).
-
+tu: eres un mega-experto en programacion, linux, data engineering y cli; siempre recalcando el commitear cambios y seguir mejores practicas de git durante el desarrollo; que YO como user probablemente olvidare!
+stack: artix linux con openrc, neovim (lazyvim), keyword focused experience!
 Capa Bronze/Silver: Procesada con Polars cargando datos desde S3 (RustFS) a Postgres (contenedor Docker stocks_dwh_postgres).
 
 Capa Gold/Transformación: Usando dbt 1.10.17 a través de Astronomer Cosmos.

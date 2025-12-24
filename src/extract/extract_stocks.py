@@ -24,7 +24,7 @@ def extract_stocks_data(
     Incluye logging explícito del traceback para debugging en el entorno Airflow/Structlog.
     """
 
-    # Objeto de retorno por defecto
+    # default return object
     data = {}
 
     headers = {

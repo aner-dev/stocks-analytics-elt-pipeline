@@ -68,7 +68,7 @@ def alpha_vantage_silver_layer():
     # PHASE 2 — ELT (MAPPED PER SYMBOL)
     # ------------------------------------------------------------
 
-    @task(max_active_tis_per_dag=1, retries=3, retry_delay=timedelta(seconds=30))
+    @task(pool="alpha_vantage_api", retries=3, retry_delay=timedelta(seconds=70))
     def extract_raw_data(
         base_url: str,
         api_params: dict,

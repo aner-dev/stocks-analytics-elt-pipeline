@@ -42,6 +42,20 @@ services:
     networks:
       - airflow
 
+  dashboard:
+    build: . # Reutiliza tu Dockerfile/requirements.txt de Astro
+    container_name: stocks_dashboard
+    env_file:
+      - compose.env
+    # IMPORTANTE: Streamlit no es parte de Airflow, hay que decirle qué ejecutar
+    command: streamlit run ui/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    networks:
+      - airflow
+    depends_on:
+      - stocks_dwh_service
+
 volumes:
   stocks_dwh_postgres_data:
   rustfs_data:

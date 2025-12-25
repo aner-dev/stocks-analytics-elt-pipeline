@@ -8,14 +8,17 @@ dependencies = [
   "apache-airflow-providers-postgres>=6.5.0",
   "astronomer-cosmos~=1.11.0",
   "boto3>=1.40.54",
+  "connectorx>=0.4.4",
   "dbt-core>=1.8.8",
   "dbt-postgres~=1.8.0",
+  "plotly>=6.5.0",
   "polars[pyarrow,pydantic]>=1.34.0",
   "psycopg2-binary>=2.9.11",
   "pyarrow>=22.0.0",
   "pydantic>=2.8.2",
   "requests>=2.32.5",
   "setuptools>=80.9.0",
+  "streamlit>=1.52.2",
   "structlog>=25.4.0",
 ]
 [project.optional-dependencies]

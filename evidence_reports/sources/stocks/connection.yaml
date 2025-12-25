@@ -1,0 +1,12 @@
+# evidence_reports/sources/stocks/connection.yaml
+name: stocks_gold
+type: postgres
+options:
+  host: localhost
+  port: 5433
+  user: postgres
+  password: postgres
+  database: stocks_dwh
+  # Aquí es donde haces el match con dbt:
+  # Si tus modelos dbt terminan en el schema 'public' o 'gold', ponlo aquí.
+  schema: public

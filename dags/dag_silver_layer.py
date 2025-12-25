@@ -69,18 +69,37 @@ def alpha_vantage_silver_layer():
     # ------------------------------------------------------------
 
     @task(pool="alpha_vantage_api", retries=3, retry_delay=timedelta(seconds=70))
-    def extract_raw_data(
-        base_url: str,
-        api_params: dict,
-        symbol: str,
-    ) -> dict:
+    def extract_raw_data(payload: dict) -> dict:
         # CHANGE: explicit task signature to avoid Airflow context injection (**kwargs)
         # and keep business logic decoupled from Airflow
         return extract_stocks_data(
-            base_url=base_url,
-            api_params=api_params,
-            symbol=symbol,
+            base_url=payload["base_url"],
+            api_params=payload["api_params"],
+            symbol=payload["symbol"],
         )
+
+    @task
+    def filter_success_task(extracted_results: list) -> list:
+        """
+        Receives the complete list of extraction dictionaries.
+        Only allows those where success == True to pass through.
+        """
+        successful = [res for res in extracted_results if res.get("success") is True]
+        failed = [
+            res.get("symbol")
+            for res in extracted_results
+            if res.get("success") is False
+        ]
+
+        if failed:
+            log.warning(
+                "Symbols ignored due to API failures", count=len(failed), symbols=failed
+            )
+
+        if not successful:
+            raise ValueError("No extractions were successful. Aborting pipeline.")
+
+        return successful
 
     @task
     def validate_raw_payload_task(extracted_data: dict) -> dict:
@@ -102,15 +121,14 @@ def alpha_vantage_silver_layer():
         return "Ready for Gold!"
 
     # --- Extraction ---
-    extracted_data = extract_raw_data.expand(
-        symbol=symbols_payload.map(lambda x: x["symbol"]),
-        base_url=symbols_payload.map(lambda x: x["base_url"]),
-        api_params=symbols_payload.map(lambda x: x["api_params"]),
-    )
-    [db_setup, s3_setup] >> extracted_data
+    raw_extracted_data = extract_raw_data.expand(payload=symbols_payload)
+    [db_setup, s3_setup] >> raw_extracted_data
+
+    # --- Filtering ---
+    clean_data = filter_success_task(raw_extracted_data)
 
     # --- Validation ---
-    validated_data = validate_raw_payload_task.expand(extracted_data=extracted_data)
+    validated_data = validate_raw_payload_task.expand(extracted_data=clean_data)
 
     # --- Bronze Load ---
     loaded_bronze = load_to_bronze.expand(extracted_data=validated_data)

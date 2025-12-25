@@ -63,7 +63,13 @@ def extract_stocks_data(
             # Pero solo si no es la nota de éxito (a veces Alpha Vantage pone notas informativas)
             if "Error Message" in data:
                 log.error("API returned error", symbol=symbol, api_response=data)
-                raise ValueError(f"API business error for {symbol}")
+                return {
+                    "symbol": symbol,
+                    "raw_json": None,
+                    "success": False,
+                    "error_msg": f"API business error: {data.get('Error Message')}",
+                    "error_type": "API_INVALID_CALL",
+                }
 
         # 3. VERIFICACIÓN DE ÉXITO Y REPORTE DE REGISTROS (CORRECCIÓN CRÍTICA)
         if data_key in data:
@@ -83,36 +89,45 @@ def extract_stocks_data(
             "symbol": symbol,
             "raw_json": data,
             "extract_time": str(datetime.now(timezone.utc)),
+            "success": True,
         }
+    except (
+        requests.RequestException,
+        requests.JSONDecodeError,
+        ValueError,
+        Exception,
+    ) as e:
+        # 1. Determinamos el tipo de error manteniendo tu granularidad
+        if isinstance(e, requests.RequestException):
+            error_type = "RequestException"
+            error_message = f"Network/MTU Error: {e}"
+        elif isinstance(e, requests.JSONDecodeError):
+            error_type = "JSONDecodeError"
+            error_message = f"Invalid JSON response from API: {e}"
+        elif isinstance(e, ValueError):
+            error_type = "APIValueError"
+            error_message = str(e)
+        else:
+            error_type = type(e).__name__
+            error_message = str(e)
 
-    except requests.RequestException as e:
-        error_type = "RequestException"
-        error_message = f"Network/MTU Error: {e}"
-    except requests.JSONDecodeError as e:
-        error_type = "JSONDecodeError"
-        error_message = f"Invalid JSON response from API: {e}"
-    except ValueError as e:
-        error_type = "APIValueError"
-        error_message = str(e)
-    except Exception as e:
-        # Cualquier otro error inesperado (ej. NameError, import, etc.)
-        error_type = "UnknownError"
-        error_message = f"Unexpected error: {e}"
+        # 2. Capturamos el traceback para TODOS los errores
+        full_traceback = traceback.format_exc()
 
-    # --- BLOQUE CRÍTICO DE DEBUGGING ---
+        # 3. Logeamos el error (Soft Fail)
+        log.error(
+            "!!! SOFT FAIL CAPTURED !!!",
+            symbol=symbol,
+            error_type=error_type,
+            error_message=error_message,
+            full_traceback=full_traceback,
+        )
 
-    # 1. Capturamos la traza completa antes de que Airflow la pierda
-    full_traceback = traceback.format_exc()
-
-    # 2. Registramos el error de forma detallada
-    log.error(
-        "!!! TASK FAILED (Full Traceback Forced) !!!",
-        symbol=symbol,
-        error_type=error_type,
-        error_message=error_message,
-        # Incluimos la traza completa en un campo del JSON
-        full_traceback=full_traceback,
-    )
-
-    # 3. Relanzamos la excepción para que Airflow marque la tarea como fallida
-    raise
+        # 4. Retornamos el diccionario de error (Esto evita que el DAG muera)
+        return {
+            "symbol": symbol,
+            "raw_json": None,
+            "success": False,
+            "error_msg": error_message,
+            "error_type": error_type,
+        }

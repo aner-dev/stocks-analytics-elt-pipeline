@@ -1,32 +1,23 @@
 # src/utils/dag_helpers.py
 from airflow.models.variable import Variable
 from typing import List, Dict
+import json
 
 
 def define_symbols_and_parameters() -> List[Dict[str, str]]:
     # List of symbols (obtained from an Airflow Variable, for example)
     api_key = Variable.get("alpha_vantage_api_key")
+    symbols_json = Variable.get("symbols_to_track", default_var='["IBM", "MSFT"]')
+    symbols_to_process = json.loads(symbols_json)
 
-    SYMBOLS_TO_PROCESS = [
-        "IBM",
-        "MSFT",
-        "NVDA",
-        "GOOGL",
-        "AAPL",
-        "AMZN",
-        "V",
-        "MA",
-        "TSCO.LON",
-        "SHOP.TRTO",
-    ]
-    BASE_URL = "https://www.alphavantage.co/query"
-
+    base_url = "https://www.alphavantage.co/query"
     symbol_payloads = []
-    for symbol in SYMBOLS_TO_PROCESS:
+
+    for symbol in symbols_to_process:
         symbol_payloads.append(
             {
                 "symbol": symbol,
-                "base_url": BASE_URL,
+                "base_url": base_url,
                 "api_params": {
                     "function": "TIME_SERIES_WEEKLY_ADJUSTED",
                     "apikey": api_key,

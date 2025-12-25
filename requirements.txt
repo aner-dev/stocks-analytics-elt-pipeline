@@ -20,3 +20,6 @@ pydantic>=2.8.2
 
 # === DBT / COSMOS (EXISTING) ===
 sqlalchemy==1.4.54
+streamlit
+plotly
+connectorx>=0.3.2

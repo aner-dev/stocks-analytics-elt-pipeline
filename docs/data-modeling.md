@@ -1,75 +1,45 @@
-name convention: snake_case & prefix for metadata (\_ingestion_timestamp)
+# 📂 Logical Data Modeling Document
 
-# silver layer main goal
+**Last Updated:** 2025-12-27
+**Status:** ✅ Final (Post-Gold Refactor)
 
-- serve as unique and clean source of truth for dbt (data-build-tool) and posterior creation of gold layer (dimensional modeling)
+## 🏗️ Design Principles
+- **Naming Convention:** `snake_case` for all entities.
+- **Metadata Standard:** Prefix `_` for lineage/technical columns (e.g., `_ingestion_timestamp`).
+- **Architecture:** Medallion Architecture (Silver -> Gold).
 
-# transactional data (main entity)
+---
 
-- granularity: a register for symbol, week/date
-- keys: CK/compose key (timestamp, symbol)
-  - ensure entity integrity
-- data types: mapping JSON data to native PostgreSQL data types
-- data lineage (metadata):
-  - ingestion of columns: \_ingestion_timestamp, \_data_source, \_processing_date
-  - guaranteeing observability and auditability of silver layer
-    - allowing tracking of origin and data freshness
+## 🥈 Silver Layer: Staging & Clean Truth
+*The `stocks` schema acts as the unique source of truth.*
 
-# auditory table (observability)
+### 1. Primary Entity: `stocks.weekly_adjusted_stocks`
+- **Granularity:** 1 record per Symbol per Week.
+- **Integrity:** Compound PK on `(symbol, trade_date)`.
+- **Key Columns:** `trade_date`, `adjusted_close_price`, `trade_volume`.
+- **Lineage:** `_ingestion_timestamp`, `_data_source`, `_processing_date`.
 
-- table: stocks.pipeline_audit
-- entity purpose: snapshot/register type
-- separates business logic (prices data) of control/system logic (auditory)
-- key metrics: rows_processed, rows_inserted, rows_rejected & duration_seconds columns/fields
+---
 
-# 📂 Logical Data Modeling Document - Silver Layer
+## 🥇 Gold Layer: Dimensional Modeling (Star Schema)
+*Managed by dbt. Optimized for High-Performance BI (Streamlit).*
 
-**Date:** 2025-12-10
-**Scope:** Definition of the `stocks` schema and the Silver Layer tables (dbt Source).
-
-______________________________________________________________________
-
-## 🎯 Primary Goal of the Silver Layer
-
-The Silver Layer (`stocks` schema) is the **final staging area** and the **single source of clean truth** for the Gold Layer (Dimensional Modeling) transformations executed by dbt.
-
-### Implemented Conventions:
-
-- **Schema:** Separation of the `stocks` schema from the `public` schema for organization and permission management.
-- **Naming:** The **`snake_case`** convention is used for all table and column names (e.g., `adjusted_close`, `rows_inserted`).
-- **Metadata:** A prefix (`_`) is used to identify audit and lineage columns (e.g., `_ingestion_timestamp`).
-
-______________________________________________________________________
-
-## 1. 📈 Primary Entity: Transactional Stock Data
-
-**Table:** `stocks.weekly_adjusted_stocks` (Silver Layer)
-
-| Logical Aspect | Implementation | Rationale / Purpose |
+### 1. Fact Table: `fact_adjusted_prices`
+| Column | Type | Rationale |
 | :--- | :--- | :--- |
-| **Granularity** | One record per **Stock Symbol (Ticker)** and **Date/Week**. | Atomic level of detail, ideal for serving as a base (source) for future Fact Tables. |
-| **Primary Key (PK)** | Compound Key (CK) over **`(timestamp, symbol)`**. | Ensures **Entity Integrity** (unicity) for each weekly observation. |
-| **Data Types** | Direct mapping from JSON/Polars data to native PostgreSQL types. | **Domain Integrity.** Use of `DATE`, `DOUBLE PRECISION` (for prices), and `BIGINT` (for volume). |
-| **Lineage and Metadata** | Columns: `_ingestion_timestamp`, `_data_source`, `_processing_date`. | Ensures **Auditability and Traceability** (Data Lineage), allowing the measurement of data freshness and origin. |
+| `stock_id` | UUID | Surrogate Key (MD5). |
+| `symbol` | TEXT | Denormalized for fast filtering. |
+| `company_name` | TEXT | Enriched via dbt Seeds. |
+| `weekly_return_pct` | NUMERIC | Business Metric (SQL calculated). |
+| `volatility_pct` | NUMERIC | Risk Metric (Handles Splits). |
 
-______________________________________________________________________
+### 2. Dimensions
+- **`dim_stock`**: Enriched master data (Sector, Industry).
+- **`dim_date`**: Time intelligence (Week number, Year).
 
-## 2. 🛡️ Support Entity: Audit Table (Observability)
+---
 
-**Table:** `stocks.pipeline_audit`
-
-| Logical Aspect | Implementation | Rationale / Purpose |
-| :--- | :--- | :--- |
-| **Entity Purpose** | **Log / Snapshot** type entity for each pipeline execution. | Separates **Control/System** logic from **Business** logic (price data). |
-| **Key Metrics** | Stores `rows_processed`, `rows_inserted`, `rows_rejected`, and `duration_seconds`. | Allows calculation of the **Service Level Agreement (SLA)** and **Data Quality** (rejection rate) for each E/T/L task. |
-| **Execution** | A record is inserted upon successful completion of the Polars DataFrame load. | Ensures **Observability**, providing task-level metrics for Airflow. |
-
-______________________________________________________________________
-
-## ➡️ Next Step (Dimensional Modeling)
-
-The Logical Modeling defines the source structure (Silver Layer). The next phase, the **Dimensional Modeling (Star Schema)**, will use this Silver Layer to create Dimensions and Fact Tables for the Gold Layer.
-
-______________________________________________________________________
-
-Shall we proceed with the **dbt Project Configuration** for the Gold Layer?
+## 📉 Summary of Refactor Decisions
+1. **Denormalization:** We brought `company_name` into the Fact table to eliminate JOIN latency in the UI.
+2. **Logic Centralization:** Moved financial calculations from Python to dbt (SQL) for a single source of truth.
+3. **Data Quality:** Tuned `dbt_expectations` to handle historical stock splits (Threshold 10.0).

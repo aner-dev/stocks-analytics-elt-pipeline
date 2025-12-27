@@ -1,0 +1,11 @@
+symbol,company_name,sector,industry
+IBM,International Business Machines,Technology,Information Technology Services
+MSFT,Microsoft Corporation,Technology,Software—Infrastructure
+NVDA,NVIDIA Corporation,Technology,Semiconductors
+GOOGL,Alphabet Inc.,Communication Services,Internet Content
+AAPL,Apple Inc.,Technology,Consumer Electronics
+AMZN,Amazon.com Inc.,Consumer Discretionary,Internet Retail
+V,Visa Inc.,Financial Services,Credit Services
+MA,Mastercard Incorporated,Financial Services,Credit Services
+TSCO.LON,Tesco PLC,Consumer Defensive,Grocery Stores
+SHOP.TRTO,Shopify Inc.,Technology,Software—Application

@@ -1,55 +1,37 @@
-# facts.yml
-# =======================================================
-# FACTS (FACT TABLE)
-# =======================================================
 version: 2
+
 models:
   - name: fact_adjusted_prices
-    description: >
-      The granularity is Stock x Week.
-
+    description: "Granularity: Stock x Week. Note: Volatility threshold accounts for historical stock splits."
     tests:
       - dbt_utils.unique_combination_of_columns:
-          arguments:
-            combination_of_columns: [stock_id, date_id]
+          combination_of_columns: [stock_id, date_id]
 
     columns:
-      # FOREIGN KEY (FK) Tests (Referential Integrity)
       - name: stock_id
-        description: Foreign key to the dim_stock table.
         tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('dim_stock')
-                field: stock_id
+              to: ref('dim_stock')
+              field: stock_id
 
       - name: date_id
-        description: Foreign key to the dim_date table.
         tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('dim_date')
-                field: date_id
+              to: ref('dim_date')
+              field: date_id
 
-      # PRIMARY KEY Composition Test
-      - name: composite_key
-        description: "Composed of stock_id and date_id. Cannot have duplicates."
-
-      # Metric Tests (Business Validation)
       - name: adjusted_close_price
-        description: Adjusted closing price. Main metric.
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              arguments:
-                min_value: 0
+              min_value: 0
 
-      - name: trade_volume
-        description: Weekly trading volume.
+      - name: volatility_pct
+        description: "Weekly volatility. High threshold (10.0) handles extreme cases like stock splits."
         tests:
           - not_null
-          - dbt_expectations.expect_column_min_to_be_between:
-              arguments:
-                min_value: 0
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10

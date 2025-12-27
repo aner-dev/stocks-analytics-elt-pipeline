@@ -1,78 +1,46 @@
--- fact_adjusted_prices.sql 
 {{ config(
-  materialized='incremental', 
-  unique_key=['stock_id', 'date_id'],
-  incremental_strategy='merge',
-  tags=['gold']
+    materialized='table'
 ) }}
 
-WITH stg_data AS (
-    -- 1. Select the clean data source (Silver Layer)
-    -- This uses the alias defined in your sources.yml: stocks_silver_layer.weekly_adjusted_prices
-    SELECT
-        stock_symbol,
-        trade_date,
-        open_price,
-        high_price,
-        low_price,
-        adjusted_close_price,
-        trade_volume
-    FROM {{ ref('stg_weekly_adjusted_prices') }} -- use 'ref' instead of 'source' because stg_stocks is a dbt model
-    {% if is_incremental() %}
-    WHERE trade_date > (SELECT MAX(trade_date) FROM {{ this }})
-    {% endif %}
+WITH source_data AS (
+    SELECT * FROM {{ ref('stg_weekly_adjusted_prices') }}
 ),
 
--- 2. Calculate the derived facts
-calculated_facts AS (
-    SELECT
-        *,
-        -- Derived Fact Calculation: Absolute Weekly Return
-        (adjusted_close_price - open_price) AS weekly_return_abs,
-        
-        -- Derived Fact Calculation: Percentage Weekly Return
-        -- NULLIF is used to prevent division by zero
-        (adjusted_close_price - open_price) / NULLIF(open_price, 0) AS weekly_return_pct,
+dim_stock AS (
+    SELECT * FROM {{ ref('dim_stock') }}
+),
 
-        -- Derived Fact Calculation: Absolute Trading Range
-        (high_price - low_price) AS trading_range_abs,
-        
-        -- Derived Fact Calculation: Volume in USD (adjusted price * volume)
-        (adjusted_close_price * trade_volume) AS volume_usd
-
-    FROM stg_data
+dim_date AS (
+    SELECT * FROM {{ ref('dim_date') }}
 )
 
--- 3. Join the data with the dimensions to get the Foreign Keys (FKs)
 SELECT
-    -- Foreign Keys (FKs)
-    dim_s.stock_id,
-    dim_d.date_id,
+    -- Keys
+    s.stock_id,
+    d.date_id,
     
-    -- Transactional Facts (API)
-    cf.open_price,
-    cf.high_price,
-    cf.low_price,
-    cf.adjusted_close_price,
-    cf.trade_volume,
+    -- Denormalized Attributes
+    sd.stock_symbol AS symbol,
+    s.company_name,
+    sd.trade_date,
 
-    -- Derived Facts (Calculated)
-    cf.weekly_return_abs,
-    cf.weekly_return_pct,
-    cf.trading_range_abs,
-    cf.volume_usd,
+    -- Measures
+    ROUND(sd.open_price::numeric, 4) AS open_price,
+    ROUND(sd.high_price::numeric, 4) AS high_price,
+    ROUND(sd.low_price::numeric, 4) AS low_price,
+    ROUND(sd.adjusted_close_price::numeric, 4) AS adjusted_close_price,
+    sd.trade_volume,
+    
+    -- Calculated Metrics
+    ROUND((sd.adjusted_close_price - sd.open_price)::numeric, 4) AS weekly_return_abs,
+    ROUND(((sd.adjusted_close_price / NULLIF(sd.open_price, 0)) - 1)::numeric, 4) AS weekly_return_pct,
+    ROUND((sd.high_price - sd.low_price)::numeric, 4) AS trading_range_abs,
+    ROUND(((sd.high_price / NULLIF(sd.low_price, 0)) - 1)::numeric, 4) AS volatility_pct,
     
     -- Metadata
-    CURRENT_TIMESTAMP AS load_timestamp,
-    '{{ this.name }}' AS source_model, -- Uses the dbt model name as the source
-    '{{ invocation_id }}' AS execution_batch_id -- Unique ID of the dbt run 
+    sd._ingestion_timestamp AS load_timestamp,
+    'alpha_vantage' AS source_model
 
-FROM calculated_facts cf
-
--- Get the Foreign Key from the Stock Dimension (Join by natural key: symbol)
-INNER JOIN {{ ref('dim_stock') }} dim_s
-    ON cf.stock_symbol = dim_s.symbol
-
--- Get the Foreign Key from the Date Dimension (Join by natural key: trade_date)
-INNER JOIN {{ ref('dim_date') }} dim_d
-    ON cf.trade_date = dim_d.week_ending
+FROM source_data sd
+JOIN dim_stock s ON sd.stock_symbol = s.symbol
+JOIN dim_date d ON sd.trade_date = d.week_ending

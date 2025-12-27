@@ -2,7 +2,7 @@
 services:
   scheduler:
     env_file:
-      - compose.env
+      - .env
     command: bash -c "/usr/local/airflow/src/scripts/init_airflow.sh && airflow scheduler"
     networks:
       - airflow
@@ -46,7 +46,7 @@ services:
     image: python:3.11-slim
     container_name: stocks_dashboard
     env_file:
-      - compose.env
+      - .env
     working_dir: /app
     volumes:
       - .:/app
@@ -65,12 +65,12 @@ services:
     container_name: chisel_client
     restart: always
     env_file:
-      - compose.env
+      - .env
     networks:
       - airflow
     depends_on:
       - dashboard
-    # El comando le dice:
+    # the command says:
     # "Conéctate al servidor y mapea el puerto 8501 del contenedor dashboard al puerto 8501 remoto"
     command: client --auth ${CHISEL_AUTH} ${CHISEL_SERVER_URL} R:8501:stocks_dashboard:8501
 

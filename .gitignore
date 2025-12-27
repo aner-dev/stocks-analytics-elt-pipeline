@@ -91,3 +91,4 @@ node_modules
 node_modules/
 .npm/
 .evidence/
+.bak

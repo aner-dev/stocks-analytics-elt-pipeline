@@ -1,15 +1,18 @@
-# dashboard.py
 import streamlit as st
 import polars as pl
 import os
 import plotly.express as px
+import time
 
-st.set_page_config(page_title="Stocks Gold Layer Monitor", layout="wide")
+# Professional page configuration
+st.set_page_config(
+    page_title="Stocks Gold Layer Monitor", layout="wide", page_icon="📈"
+)
 
 
 @st.cache_resource
 def get_db_uri():
-    # Asegúrate de que esta variable esté en tu .env o entorno
+    """Retrieves the database connection URI from environment variables."""
     return os.getenv(
         "DB_URL", "postgresql://postgres:postgres@localhost:5432/stocks_dwh"
     )
@@ -17,11 +20,8 @@ def get_db_uri():
 
 @st.cache_data(ttl=60)
 def load_gold_data():
+    """Loads Gold layer data using the ConnectorX engine for maximum speed."""
     uri = get_db_uri()
-
-    # QUERY OPTIMIZADA:
-    # Usamos las columnas denormalizadas que añadimos en el ADR-003.
-    # Ya no necesitamos JOINs pesados porque la Fact Table tiene lo necesario para el BI.
     query = """
     SELECT 
         trade_date as date,
@@ -42,70 +42,121 @@ def main():
     st.markdown("---")
 
     try:
+        # --- 1. PERFORMANCE MEASUREMENT (DATA ENGINEERING OPS) ---
+        t_start = time.perf_counter()
+
         df = load_gold_data()
 
-        # --- FILTROS EN SIDEBAR ---
-        st.sidebar.header("Filtros")
+        # --- 2. SIDEBAR FILTERS ---
+        st.sidebar.header("🎛️ Pipeline Controls")
+
+        # Get unique list of symbols
+        all_symbols = df["symbol"].unique().sort().to_list()
+
         selected_symbols = st.sidebar.multiselect(
-            "Selecciona Tickers",
-            options=df["symbol"].unique().sort(),
-            default=df["symbol"].unique().sort()[:3],
+            "Select Tickers",
+            options=all_symbols,
+            default=all_symbols[:3] if len(all_symbols) >= 3 else all_symbols,
         )
 
-        # Filtrado con Polars (Ultra rápido)
+        # --- 3. ANALYTICAL PROCESSING (POLARS ENGINE) ---
+        # Ultra-fast filtering
         filtered_df = df.filter(pl.col("symbol").is_in(selected_symbols))
 
-        # --- KPIs ---
+        # Statistical Anomaly Detection (Z-Score)
+        # Calculate price deviation relative to its mean per symbol
+        filtered_df = filtered_df.with_columns(
+            [
+                (
+                    (
+                        pl.col("adjusted_close_price")
+                        - pl.col("adjusted_close_price").mean().over("symbol")
+                    )
+                    / pl.col("adjusted_close_price").std().over("symbol")
+                ).alias("z_score")
+            ]
+        )
+
+        # Count rows considered anomalies (outside +/- 2 standard deviations)
+        anomaly_count = filtered_df.filter(pl.col("z_score").abs() > 2).height
+
+        # End of latency measurement
+        t_end = time.perf_counter()
+        proc_time = t_end - t_start
+
+        # --- 4. BUSINESS & OPERATIONAL KPIs ---
         last_date = df["date"].max()
+
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            st.metric("Tickers Activos", df["symbol"].n_unique())
+            st.metric("Active Tickers", df["symbol"].n_unique())
         with col2:
-            st.metric("Última Actualización", str(last_date))
+            st.metric("Processing Latency", f"{proc_time:.4f}s")
         with col3:
             avg_return = filtered_df["weekly_return_pct"].mean()
-            st.metric("Avg Weekly Return", f"{avg_return:.2%}")
+            # Validate data presence to avoid formatting errors
+            ret_val = avg_return if avg_return is not None else 0
+            st.metric("Avg Weekly Return", f"{ret_val:.2%}")
         with col4:
-            # Nueva métrica gracias al refactor
-            avg_vol = filtered_df["volatility_pct"].mean()
-            st.metric("Avg Volatility", f"{avg_vol:.2%}")
+            st.metric(
+                "Detected Anomalies",
+                anomaly_count,
+                delta_color="inverse",
+                help="Records with Z-Score > 2 (atypical price variation)",
+            )
 
-        # --- GRÁFICO DE PRECIOS ---
-        st.subheader("Evolución de Precios Ajustados")
+        st.caption(f"📅 Gold Layer data updated until: **{last_date}**")
+
+        # --- 5. VISUALIZATIONS (POLARS -> PANDAS BRIDGE FOR PLOTLY) ---
+
+        # Adjusted Price Line Chart
+        st.subheader("Adjusted Price Evolution")
         fig = px.line(
             filtered_df.to_pandas(),
             x="date",
             y="adjusted_close_price",
             color="symbol",
-            hover_data=["company_name"],  # ¡Gracias al Seed de dbt!
+            hover_data=["company_name", "z_score"],
             template="plotly_dark",
-            labels={"adjusted_close_price": "Precio Ajustado (USD)", "date": "Semana"},
+            labels={"adjusted_close_price": "Adjusted Price (USD)", "date": "Week"},
         )
+        fig.update_layout(hovermode="x unified")
         st.plotly_chart(fig, use_container_width=True)
 
-        # --- ANÁLISIS DE VOLATILIDAD ---
-        st.subheader("Volatilidad Semanal por Símbolo")
+        # Volatility Chart
+        st.subheader("Volatility Distribution by Symbol")
         fig_vol = px.box(
             filtered_df.to_pandas(),
             x="symbol",
             y="volatility_pct",
             color="symbol",
             template="plotly_dark",
+            labels={"volatility_pct": "Volatility %", "symbol": "Ticker"},
         )
         st.plotly_chart(fig_vol, use_container_width=True)
 
-        # --- TABLA DE AUDITORÍA ---
-        st.subheader("🔍 Inspección de Datos (Gold Layer)")
+        # --- 6. DATA AUDIT TABLE ---
+        st.subheader("🔍 Data Inspection (Gold Layer)")
         st.dataframe(
             filtered_df.to_pandas().sort_values("date", ascending=False),
             use_container_width=True,
+            hide_index=True,
         )
 
+        # Sidebar Footer
+        st.sidebar.markdown("---")
+        st.sidebar.caption("🚀 **Backend:** Polars + ConnectorX")
+        st.sidebar.caption(f"⚙️ **Rows Ingested:** {len(df)}")
+        st.sidebar.caption(f"⏱️ **Total Latency:** {proc_time * 1000:.2f} ms")
+
     except Exception as e:
-        st.error(f"Error cargando el Star Schema: {e}")
-        st.info("Revisa la conexión a la base de datos y que las tablas Gold existan.")
+        st.error(f"❌ Error loading Star Schema: {e}")
+        st.info(
+            "Check the database connection and ensure Gold tables exist in Postgres."
+        )
 
 
 if __name__ == "__main__":
     main()
+

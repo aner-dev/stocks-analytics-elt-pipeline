@@ -1,57 +1,39 @@
-# Makefile for High-Performance Stock Analytics Pipeline
-# Targets for Artix Linux / Podman environment
-
 # --- Variables ---
 DOCKER_COMPOSE = astro dev
 DBT_DIR = dags/dbt/elt_pipeline_stocks
+DBT_VENV = /usr/local/airflow/dbt_venv/bin/dbt
+SCHEDULER_CONTAINER = dbt-on-astro_f72251-scheduler-1
 
-.PHONY: help up down restart dbt-run dbt-test dbt-debug evidence-logs shell check-socket
-
-# --- Validation ---
-# Checks if Podman socket is active to avoid cryptic Astro errors
-check-socket:
-	@ls $(subst unix://,,$(DOCKER_HOST)) > /dev/null 2>&1 || (echo "Error: Podman socket not found at $(DOCKER_HOST). Run your user service or check zshrc."; exit 1)
-
-help:
-	@echo "Usage: make [target]"
-	@echo ""
-	@echo "Infrastructure:"
-	@echo "  up             Start the entire stack (Airflow, Postgres, RustFS, Evidence)"
-	@echo "  down           Stop all services"
-	@echo "  restart        Restart the containers"
-	@echo ""
-	@echo "Data Engineering (dbt):"
-	@echo "  dbt-run        Run Gold layer models"
-	@echo "  dbt-test       Execute dbt_expectations and core tests"
-	@echo "  dbt-debug      Check dbt database connectivity"
-	@echo ""
-	@echo "Monitoring:"
-	@echo "  evidence-logs  Follow Evidence.dev container logs"
-	@echo "  shell          Enter the Airflow worker container shell"
+.PHONY: up down restart dbt-run dbt-test dbt-debug dashboard audit-mem
 
 # --- Infrastructure ---
-up: check-socket
+up:
 	$(DOCKER_COMPOSE) start
 
 down:
 	$(DOCKER_COMPOSE) stop
 
-restart: check-socket
+restart:
 	$(DOCKER_COMPOSE) restart
 
-# --- dbt / Transformation Layer ---
 dbt-run:
-	$(DOCKER_COMPOSE) bash -c "cd $(DBT_DIR) && dbt run"
+	podman exec -it $(SCHEDULER_CONTAINER) $(DBT_VENV) run --project-dir $(DBT_DIR) --profiles-dir $(DBT_DIR)
 
 dbt-test:
-	$(DOCKER_COMPOSE) bash -c "cd $(DBT_DIR) && dbt test"
+	podman exec -it $(SCHEDULER_CONTAINER) $(DBT_VENV) test --project-dir $(DBT_DIR) --profiles-dir $(DBT_DIR)
 
 dbt-debug:
-	$(DOCKER_COMPOSE) bash -c "cd $(DBT_DIR) && dbt debug"
+	podman exec -it $(SCHEDULER_CONTAINER) $(DBT_VENV) debug --project-dir $(DBT_DIR) --profiles-dir $(DBT_DIR)
 
-# --- Monitoring & Debugging ---
-evidence-logs:
-	podman logs -f stocks_evidence
+# --- Analytics & Performance ---
+# Para correr Streamlit y el audit desde tu local usando el entorno de uv
+dashboard:
+	uv run streamlit run ui/dashboard.py
 
-shell:
-	$(DOCKER_COMPOSE) bash
+audit-mem:
+	export DB_URL="postgresql://postgres:postgres@127.0.0.1:5433/stocks_dwh" && uv run python src/scripts/audit_mem.py
+
+# --- Cleanup ---
+clean:
+	rm -rf __pycache__ .pytest_cache
+	find . -name "*.bak" -type f -delete

@@ -43,18 +43,36 @@ services:
       - airflow
 
   dashboard:
-    build: . # Reutiliza tu Dockerfile/requirements.txt de Astro
+    image: python:3.11-slim
     container_name: stocks_dashboard
     env_file:
       - compose.env
-    # IMPORTANTE: Streamlit no es parte de Airflow, hay que decirle qué ejecutar
-    command: streamlit run ui/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: >
+      bash -c "pip install --no-cache-dir streamlit polars connectorx plotly psycopg2-binary && 
+      streamlit run ui/dashboard.py --server.port=8501 --server.address=0.0.0.0"
     ports:
       - "8501:8501"
     networks:
       - airflow
     depends_on:
       - stocks_dwh_service
+
+  chisel_client:
+    image: jpillora/chisel
+    container_name: chisel_client
+    restart: always
+    env_file:
+      - compose.env
+    networks:
+      - airflow
+    depends_on:
+      - dashboard
+    # El comando le dice:
+    # "Conéctate al servidor y mapea el puerto 8501 del contenedor dashboard al puerto 8501 remoto"
+    command: client --auth ${CHISEL_AUTH} ${CHISEL_SERVER_URL} R:8501:stocks_dashboard:8501
 
 volumes:
   stocks_dwh_postgres_data:

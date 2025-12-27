@@ -8,7 +8,7 @@ WITH source_data AS (
 -- Final selection for the staging model
 SELECT
     -- Rename columns for dimensional clarity
-    symbol AS stock_symbol,
+    TRIM(UPPER(symbol)) AS stock_symbol,
     price_date AS trade_date,
     open AS open_price,
     high AS high_price,

@@ -1,6 +1,6 @@
 # dag_silver_layer.py
 # FIXME: merge issue in PR/pull request in github (pyproject.toml & uv.lock)
-# TODO: create dag_gold_layer.py and finish dbt/data modeling phase
+# FIXME: refactor and refine fact table (data modeling)
 
 from airflow.decorators import dag, task
 from airflow.sdk.definitions.asset import Asset as Dataset

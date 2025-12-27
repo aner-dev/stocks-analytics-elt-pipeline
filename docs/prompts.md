@@ -38,3 +38,38 @@ Star Schema Validation: The UI performs real-time JOINs between fact_adjusted_pr
 High-Performance Fetching: Powered by Polars and ConnectorX, data is streamed from Postgres using the Arrow memory format, bypassing the overhead of traditional Row-based processing.
 
 Data Lineage Audit: Each visual displays the execution_batch_id from the latest Airflow run, ensuring full traceability from API to Chart.
+
+# 1st
+
+PROMPT DE CONTINUIDAD: Proyecto Stocks ELT
+Contexto del Proyecto: Estoy construyendo un pipeline ELT con el siguiente stack: Airflow (Astro), dbt (Cosmos), Polars (Silver layer), Postgres (DWH) y Streamlit (Dashboard), corriendo sobre Podman.
+
+Estado Actual:
+
+Infraestructura: Todo el entorno está arriba. El DWH vive en un contenedor llamado stocks_dwh_postgres dentro de una base de datos llamada stocks_dwh.
+
+Capa Gold (dbt): Se han generado 4 tablas: stg_weekly_adjusted_prices, dim_date, dim_stock, y fact_adjusted_prices.
+
+Hallazgos en el DWH:
+
+La fact_adjusted_prices tiene 10,983 filas (¡Éxito de ingesta!).
+
+Problema 1: El date_id en la Fact Table es un MD5 Hash, lo que dificulta las consultas temporales. Necesitamos incluir la fecha real (DATE).
+
+Problema 2: La dim_stock muestra Unknown Company en lugar de los nombres reales de las empresas (ej. Apple Inc).
+
+Problema 3: Necesitamos asegurar que el Dashboard de Streamlit consuma estas columnas legibles.
+
+Objetivos para hoy:
+
+Refactorizar fact_adjusted_prices.sql: Incluir el campo de fecha legible y revisar la generación de Surrogate Keys.
+
+Corregir dim_stock.sql: Rastrear por qué el company_name llega vacío desde la capa Silver o Staging.
+
+Actualizar dbt Docs: Regenerar la documentación para reflejar estos cambios en el esquema.
+
+Validación Final: Ejecutar el gold_dag en Airflow y verificar los datos con un JOIN humano en psql.
+
+¿Por dónde empezamos a modificar los modelos de dbt?
+
+# 2st

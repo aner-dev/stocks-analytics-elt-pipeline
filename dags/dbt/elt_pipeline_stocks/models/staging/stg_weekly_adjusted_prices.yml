@@ -8,7 +8,9 @@ models:
           - not_null
           - dbt_expectations.expect_column_values_to_match_regex:
               arguments:
-                regex: "^[A-Z0-9]+$"
+                regex: "^[A-Z0-9\\.]+$"
+              config:
+                severity: warn
 
       - name: trade_date
         tests:

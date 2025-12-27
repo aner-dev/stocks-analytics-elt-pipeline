@@ -1,4 +1,4 @@
-# dbt_project.yml - VERSIÓN CORREGIDA
+# dbt_project.yml
 name: elt_pipeline_stocks
 version: "1.0.0"
 config-version: 2

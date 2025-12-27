@@ -30,11 +30,12 @@ gold_layer_dbt_dag = DbtDag(
         dbt_executable_path="/usr/local/airflow/dbt_venv/bin/dbt",
         invocation_mode=InvocationMode.SUBPROCESS,
         dbt_deps=False,
-        test_behavior=TestBehavior.AFTER_EACH,
+        test_behavior=TestBehavior.AFTER_ALL,
     ),
     operator_args={
         "install_deps": False,
-        "full_refresh": True,
+        "full_refresh": True,  # in production this is MUCH EXPENSIVE and SLOW
+        # only used for local development & testing
     },
     schedule=None,
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),

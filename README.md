@@ -1,4 +1,4 @@
-# High-Performance Stock Analytics Pipeline
+# Stocks Analytics ELT Pipeline
 
 ## Objective
 

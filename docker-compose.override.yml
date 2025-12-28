@@ -64,8 +64,9 @@ services:
     image: jpillora/chisel
     container_name: chisel_client
     restart: always
-    env_file:
-      - .env
+    environment:
+      - CHISEL_AUTH=${CHISEL_AUTH:-default_user:default_pass}
+      - CHISEL_SERVER_URL=${CHISEL_SERVER_URL:-http://localhost:8080}
     networks:
       - airflow
     depends_on:

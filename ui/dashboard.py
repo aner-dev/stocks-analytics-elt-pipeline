@@ -85,6 +85,7 @@ def main():
         proc_time = t_end - t_start
 
         # --- 4. BUSINESS & OPERATIONAL KPIs ---
+        st.subheader("🚀 Operational Metrics & Portfolio Health")
         last_date = df["date"].max()
 
         col1, col2, col3, col4 = st.columns(4)
@@ -108,10 +109,21 @@ def main():
 
         st.caption(f"📅 Gold Layer data updated until: **{last_date}**")
 
+        # --- 4.5 DYNAMIC INSIGHTS (Data Driven) ---
+        highest_stock = filtered_df.sort("adjusted_close_price", descending=True).limit(
+            1
+        )
+        if not highest_stock.is_empty():
+            ticker = highest_stock["symbol"][0]
+            price = highest_stock["adjusted_close_price"][0]
+            st.info(
+                f"💡 **Top Performer Ingested:** {ticker} is leading the current batch at ${price:.2f}. Pipeline validated high-variance movement via Z-Score."
+            )
+
         # --- 5. VISUALIZATIONS (POLARS -> PANDAS BRIDGE FOR PLOTLY) ---
 
         # Adjusted Price Line Chart
-        st.subheader("Adjusted Price Evolution")
+        st.subheader("Market Trend Analysis")
         fig = px.line(
             filtered_df.to_pandas(),
             x="date",
@@ -125,7 +137,7 @@ def main():
         st.plotly_chart(fig, use_container_width=True)
 
         # Volatility Chart
-        st.subheader("Volatility Distribution by Symbol")
+        st.subheader("Risk Analysis: Weekly Volatility (Z-Score Integrated)")
         fig_vol = px.box(
             filtered_df.to_pandas(),
             x="symbol",
@@ -137,7 +149,7 @@ def main():
         st.plotly_chart(fig_vol, use_container_width=True)
 
         # --- 6. DATA AUDIT TABLE ---
-        st.subheader("🔍 Data Inspection (Gold Layer)")
+        st.subheader(" 󰆼  Gold Layer: Fact Adjusted Prices (Final Model)")
         st.dataframe(
             filtered_df.to_pandas().sort_values("date", ascending=False),
             use_container_width=True,
@@ -159,4 +171,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

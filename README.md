@@ -32,7 +32,7 @@ The dataset is sourced from the **Alpha Vantage API**, specifically focusing on 
 The project implements a **Medallion Architecture** designed for **batch processing**.
 This approach was chosen because the source financial data is updated on a weekly schedule, allowing for high-performance transformations and optimized resource usage without the overhead of real-time streaming.
 
-![System Architecture & Infrastructure](images/pipeline_architecture.png)
+![System Architecture & Infrastructure](https://raw.githubusercontent.com/aner-dev/stocks-analytics-elt-pipeline/main/images/pipeline_architecture.png)
 The pipeline leverages Python (Polars) as the high-speed processing engine, orchestrating data movement from S3 to Postgres with a memory-efficient, Arrow-native approach.
 
 ### 1. 󱘨 Bronze (Raw Landing Zone)
@@ -48,7 +48,7 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
 - **Engine**: **Polars** (Rust-backed processing) utilizing Arrow-native memory management.
 - **Orchestration:** Implemented via Airflow TaskFlow API with Dynamic Task Mapping to process multiple tickers in parallel.
 
-![Airflow Silver Layer DAG](images/alpha_vantage_silver_layer-graph.png)
+![Airflow Silver Layer DAG](https://raw.githubusercontent.com/aner-dev/stocks-analytics-elt-pipeline/main/images/alpha_vantage_silver_layer-graph.png)
 
 - **Performance Highlights**:
   - **Memory Efficiency**: Utilizes Arrow-native memory management to process financial time-series with zero-copy overhead.

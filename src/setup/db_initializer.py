@@ -55,4 +55,3 @@ def execute_ddl_setup(conn_id: str):
     except Exception as e:
         log.error(f"❌ Fatal Error executing DDL scripts: {e}")
         raise
-

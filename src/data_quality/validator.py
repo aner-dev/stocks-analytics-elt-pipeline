@@ -28,9 +28,7 @@ def validate_raw_payload(extracted_data: Dict[str, Any], **kwargs) -> Dict[str, 
     # --- 2. STRUCTURE CHECK (Time Series Key) ---
     if KEY_TIME_SERIES not in raw_json_data:
         log.error("Missing time series key in JSON response.")
-        raise KeyError(
-            f"JSON response is incomplete. Key '{KEY_TIME_SERIES}' not found."
-        )
+        raise KeyError(f"JSON response is incomplete. Key '{KEY_TIME_SERIES}' not found.")
 
     time_series = raw_json_data[KEY_TIME_SERIES]
 
@@ -71,13 +69,9 @@ def validate_raw_payload(extracted_data: Dict[str, Any], **kwargs) -> Dict[str, 
 
     # Check 4.5: Can numeric data be cast? (Attempt a simple casting)
     try:
-        df_for_validation.select(
-            [pl.col("^\\d\\.\\s.*$").cast(pl.Float64, strict=True)]
-        )
+        df_for_validation.select([pl.col("^\\d\\.\\s.*$").cast(pl.Float64, strict=True)])
     except pl.exceptions.ComputeError as e:
-        raise ValueError(
-            f"Numeric casting failed. Corrupt or non-numeric data: {e}"
-        ) from e
+        raise ValueError(f"Numeric casting failed. Corrupt or non-numeric data: {e}") from e
 
     log.info("✔️ Data Quality and structure validation successful.")
     # If successful, return the original JSON

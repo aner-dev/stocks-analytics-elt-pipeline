@@ -31,7 +31,5 @@ print("-" * 30)
 print("📊 MEMORY AUDIT RESULTS")
 print("-" * 30)
 print(f"Polars (Arrow-native): {df_pl.estimated_size('mb'):.2f} MB")
-print(
-    f"Pandas (Python-objects): {df_pd.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
-)
+print(f"Pandas (Python-objects): {df_pd.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
 print("-" * 30)

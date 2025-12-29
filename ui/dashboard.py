@@ -6,17 +6,13 @@ import polars as pl
 import streamlit as st
 
 # Professional page configuration
-st.set_page_config(
-    page_title="Stocks Gold Layer Monitor", layout="wide", page_icon="📈"
-)
+st.set_page_config(page_title="Stocks Gold Layer Monitor", layout="wide", page_icon="📈")
 
 
 @st.cache_resource
 def get_db_uri():
     """Retrieves the database connection URI from environment variables."""
-    return os.getenv(
-        "DB_URL", "postgresql://postgres:postgres@localhost:5432/stocks_dwh"
-    )
+    return os.getenv("DB_URL", "postgresql://postgres:postgres@localhost:5432/stocks_dwh")
 
 
 @st.cache_data(ttl=60)
@@ -111,14 +107,13 @@ def main():
         st.caption(f"📅 Gold Layer data updated until: **{last_date}**")
 
         # --- 4.5 DYNAMIC INSIGHTS (Data Driven) ---
-        highest_stock = filtered_df.sort("adjusted_close_price", descending=True).limit(
-            1
-        )
+        highest_stock = filtered_df.sort("adjusted_close_price", descending=True).limit(1)
         if not highest_stock.is_empty():
             ticker = highest_stock["symbol"][0]
             price = highest_stock["adjusted_close_price"][0]
             st.info(
-                f"💡 **Top Performer Ingested:** {ticker} is leading the current batch at ${price:.2f}. Pipeline validated high-variance movement via Z-Score."
+                f"💡 **Top Performer Ingested:** {ticker} is leading the current batch "
+                f"at ${price:.2f}. Pipeline validated high-variance movement via Z-Score."
             )
 
         # --- 5. VISUALIZATIONS (POLARS -> PANDAS BRIDGE FOR PLOTLY) ---
@@ -165,9 +160,7 @@ def main():
 
     except Exception as e:
         st.error(f"❌ Error loading Star Schema: {e}")
-        st.info(
-            "Check the database connection and ensure Gold tables exist in Postgres."
-        )
+        st.info("Check the database connection and ensure Gold tables exist in Postgres.")
 
 
 if __name__ == "__main__":

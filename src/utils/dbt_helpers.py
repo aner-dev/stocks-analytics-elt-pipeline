@@ -22,4 +22,3 @@ def get_dbt_profile_config() -> ProfileConfig:
         # profiles_yml_filepath=f"{DBT_PROJECT_DIR}/profiles.yml"
         # But with the mapping, this is no longer necessary
     )
-

@@ -12,7 +12,10 @@ ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "YELVS772CHCMKLEK")
 SYMBOL_TO_TEST = "IBM"
 BASE_URL = "https://www.alphavantage.co/query"
 # El User-Agent que usaste en tu código
-USER_AGENT_HEADER = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+USER_AGENT_HEADER = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
 # --- FIN CONFIGURACIÓN ---
 
 
@@ -60,20 +63,14 @@ def test_alpha_vantage_api_call():
 
         # 3. VERIFICACIÓN DE ÉXITO O FALLO DE API (Chequeando la clave de respuesta semanal)
         if "Weekly Adjusted Time Series" in data:
-            print(
-                f"✅ ÉXITO: Extracción semanal exitosa para {SYMBOL_TO_TEST} desde IP local."
-            )
-            print(
-                f"   Registros semanales recibidos: {len(data['Weekly Adjusted Time Series'].keys())}"
-            )
-            print(
-                "\n   => ¡El problema NO era el bloqueo de IP, sino el endpoint Premium!"
-            )
+            print(f"✅ ÉXITO: Extracción semanal exitosa para {SYMBOL_TO_TEST} desde IP local.")
+            num_records = len(data["Weekly Adjusted Time Series"])
+            print(f"   Registros semanales recibidos: {num_records}")
+
+            print("\n   => ¡El problema NO era el bloqueo de IP, sino el endpoint Premium!")
 
         elif "Error Message" in data:
-            print(
-                f"❌ FALLO DE API (Error de Clave o Parámetros): {data['Error Message']}"
-            )
+            print(f"❌ FALLO DE API (Error de Clave o Parámetros): {data['Error Message']}")
 
         elif "Note" in data and "API call frequency" in data.get("Note", ""):
             print(f"❌ FALLO DE LÍMITE DE TASA (Note): {data.get('Note')}")

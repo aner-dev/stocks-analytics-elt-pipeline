@@ -41,7 +41,9 @@ def load_dataframe_to_db(df_clean: pl.DataFrame, symbol: str, conn_id: str) -> i
         columns_str = ", ".join(columns)
 
         table_full_name = f"{SCHEMA_NAME}.{TABLE_NAME}"
-        insert_query = f"INSERT INTO {table_full_name} ({columns_str}) VALUES %s ON CONFLICT DO NOTHING"
+        insert_query = (
+            f"INSERT INTO {table_full_name} ({columns_str}) VALUES %s ON CONFLICT DO NOTHING"
+        )
 
         # 3. Bulk Insert
         extras.execute_values(
@@ -57,9 +59,7 @@ def load_dataframe_to_db(df_clean: pl.DataFrame, symbol: str, conn_id: str) -> i
         return rows_loaded
 
     except Exception as e:
-        log.error(
-            f"❌ Failed to load data for symbol {symbol} to DB: {e}", exc_info=True
-        )
+        log.error(f"❌ Failed to load data for symbol {symbol} to DB: {e}", exc_info=True)
         if conn:
             conn.rollback()
         raise RuntimeError(f"DB Load failed for {symbol}. Error: {e}")

@@ -65,13 +65,19 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
   - **Star Schema Design**: Transformation of staging models into a central `fact_adjusted_prices` table
   - **Dimension Strategy**: Implemented **SCD Type 1 logic** for `dim_stock` to maintain a streamlined, single-version-of-truth for descriptive attributes (Sector, Industry), optimizing JOIN performance for the BI layer.
   - **Surrogate Keys**: Utilization of `dbt_utils.generate_surrogate_key` to decouple business keys (symbols) from data warehouse internal logic, ensuring relational integrity.
-  - **Data Quality Framework**:
-    - **Contract Enforcement**: Utilizing `dbt-expectations` to validate ticker regex formats (`^[A-Z0-9\.]+$`) and non-negative financial ranges.
-    - **Referential Integrity**: Automated tests to ensure every `fact_key` maps correctly to `dim_stock` and `dim_date`, preventing orphaned records in the Star Schema.
-    - **Materialization Strategy**: Incremental materialization logic to optimize warehouse storage and compute costs.
+
+#### Gold Layer Preview (Fact Table)
+
+![Final Fact Table Snapshot](images/BI-fact-table.png)
+*Snapshot of the central fact table containing pre-calculated financial metrics (Returns, Volatility, and Ranges).*
+
+- **Data Quality Framework**:
+  - **Contract Enforcement**: Utilizing `dbt-expectations` to validate ticker regex formats (`^[A-Z0-9\.]+$`) and non-negative financial ranges.
+  - **Referential Integrity**: Automated tests to ensure every `fact_key` maps correctly to `dim_stock` and `dim_date`, preventing orphaned records in the Star Schema.
+  - **Materialization Strategy**: Incremental materialization logic to optimize warehouse storage and compute costs.
 - **Orchestration**: Integration via **Astronomer Cosmos**, which dynamically parses the dbt project and renders it as a native Airflow Task Group, providing granular retry logic and metadata visibility for each model.
 
-![dbt Gold Layer Lineage](images/gold_layer_dbt_dag-graph.png)
+![dbt Gold Layer Lineage](images/graph-view-dag-gold.png)
 
 ### 4. 🛠️ Infrastructure & DevOps
 
@@ -85,58 +91,21 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
 
 To simulate a professional environment where the BI layer might reside in a private network, I implemented **Chisel**. This creates a secure TCP tunnel that exposes the **Streamlit** dashboard port, applying container networking and secure data delivery.
 
-## Technologies Used
+## 🛠️ Tech Stack & Tooling (The Pipeline Architecture)
 
-- **Orchestration**: Apache Airflow (via Astro CLI)
-- **Workflow Integration**: Astronomer Cosmos (dbt-Airflow integration)
-- **Data Lake (S3 API)**: RustFS (Local S3-compatible storage)
-- **Data Processing Engine**: Polars (Rust-based DataFrames)
-- **Data Transformation**: dbt (Data Build Tool)
-- **Data Warehouse**: PostgreSQL
-- **Business Intelligence / Visualization**: Streamlit
-- **Language**: Python (for Extraction, Polars, and Airflow DAGs)
-- **Dependency Management**: `uv` (Ultra-fast Python package manager)
+| Layer | Tools & Technologies |
+| :--- | :--- |
+| **Orchestration** | ![Airflow](https://img.shields.io/badge/Airflow-017CEE?style=flat&logo=Apache%20Airflow&logoColor=white) ![Cosmos](https://img.shields.io/badge/Cosmos-black?style=flat) |
+| **Processing (ELT)** | ![Polars](https://img.shields.io/badge/Polars-CD792C?style=flat) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) |
+| **Transformation** | ![dbt](https://img.shields.io/badge/dbt-FF694B?style=flat&logo=dbt&logoColor=white) |
+| **Storage (DWH)** | ![Postgres](https://img.shields.io/badge/Postgres-336791?style=flat&logo=postgresql&logoColor=white) ![RustFS](https://img.shields.io/badge/S3_Compatible-569A31?style=flat&logo=amazons3&logoColor=white) |
+| **Visualization**| ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=Streamlit&logoColor=white) |
+| **DevOps / Infra**| ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black) ![Podman](https://img.shields.io/badge/Podman-892CA0?style=flat&logo=podman&logoColor=white) |
 
 ## 📉 Data Modeling
 
 I implemented a **Star Schema** to optimize query performance and ensure clear separation between business entities and quantitative events.
-
-```mermaid
-classDiagram
-    direction LR
-    class fact_adjusted_prices {
-        +stock_id FK
-        +date_id FK
-        +symbol string
-        +open_price float
-        +high_price float
-        +low_price float
-        +adj_close_price float
-        +trade_volume bigint
-        +weekly_return_pct float
-        +volatility_pct float
-        +load_timestamp ts
-    }
-
-    class dim_stock {
-        +stock_id PK
-        +symbol string
-        +company_name string
-        +sector string
-        +industry string
-    }
-
-    class dim_date {
-        +date_id PK
-        +week_ending date
-        +year int
-        +week_number int
-        +quarter int
-    }
-
-    dim_stock "1" --* "0..*" fact_adjusted_prices : joins on stock_id
-    dim_date "1" --* "0..*" fact_adjusted_prices : joins on date_id
-```
+![Star Schema - Entity Relationship Diagram](images/ER-diagram.png)
 
 ## 📊 Business Intelligence & Data Consumption
 
@@ -151,6 +120,14 @@ While the core of this project is Engineering, data is useless if it cannot be c
 - **High-Performance Fetching**: Powered by **Polars + ConnectorX**, data is streamed from Postgres using the **Apache Arrow** format, bypassing the overhead of traditional Row-based processing.
 
 - **Data Lineage Audit**: Each visual displays the `execution_batch_id` from the latest Airflow run, ensuring full traceability from API to Chart.
+
+### Dashboard Insights
+
+| Market Trends & Volatility | Sector Performance |
+|:---:|:---:|
+| ![Price Trends](images/price_trends.png) | ![Sector Analysis](images/volatility_and_volume.png) |
+
+> **Validation:** The UI performs real-time JOINs between `fact_adjusted_prices` and dimensions, proving the DWH structure is sound and optimized for analytical queries.
 
 ## 🚀 Pipeline Observability & Performance
 
@@ -206,6 +183,12 @@ While the core requirements are met, the following enhancements are planned for 
 - **Infrastructure as Code (IaC)**:
   - **LocalStack Integration**: Transition from standalone RustFS to **LocalStack** to mock a full AWS environment (S3, Secrets Manager, and IAM) locally for production-parity testing.
   - Transition setup to **Terraform** for AWS or GCP provisioning.
+
+## 🧠 Key Engineering Takeaways
+
+- **High-Performance ELT**: Leveraging **Polars** (Rust-based) instead of Pandas reduced memory overhead significantly, allowing for efficient parallel processing of financial time-series.
+- **Resilient Ingestion**: Implemented an immutable **Bronze Layer** (S3) to ensure idempotency, preventing redundant API calls and protecting Alpha Vantage rate limits.
+- **Data Quality as Code**: Integrated **dbt-expectations** and referential integrity tests to ensure the Gold Layer always meets financial reporting standards.
 
 ## 🚀 Quick Start (Reproducibility)
 

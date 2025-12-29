@@ -101,7 +101,7 @@ def main():
                 color="symbol",
                 hover_data=["company_name"],
                 template="plotly_dark",
-                title="Price Movement",
+                title="Price Trends",
             )
             st.plotly_chart(fig_line, use_container_width=True)
 
@@ -142,4 +142,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

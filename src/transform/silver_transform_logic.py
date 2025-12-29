@@ -66,8 +66,8 @@ def standardize_and_clean_df(
         )
         .filter(
             pl.all_horizontal(pl.col(["open", "close"]).is_finite()),
-            pl.col("close") > 0,
-            pl.col("volume") > 0,
+            pl.col("close") >= 0,
+            pl.col("volume") >= 0,
         )
         .select(
             [

@@ -29,9 +29,7 @@ def ensure_bucket_exists(bucket: str) -> None:
             raise
 
 
-def _get_boto3_client_generic(
-    service: str, endpoint: str | None = None, region: str = S3_REGION
-):
+def _get_boto3_client_generic(service: str, endpoint: str | None = None, region: str = S3_REGION):
     """
      Generic helper to create a boto3 client for any S3-compatible backend
     (RustFS, MinIO, LocalStack, AWS).

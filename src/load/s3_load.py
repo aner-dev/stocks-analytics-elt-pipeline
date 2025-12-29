@@ -12,10 +12,15 @@ log = structlog.get_logger()
 def write_bronze(json_data: dict, symbol: str, timestamp: str | None = None) -> dict:
     """load bronze layer to bucket"""
 
+    now = datetime.now()
+    date_folder = now.strftime("%Y-%m-%d")
     if timestamp is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%H%M%S")
 
-    object_name = f"bronze/alpha_vantage/{symbol}/weekly_{timestamp}.json"
+    object_name = (
+        f"bronze/alpha_vantage/{symbol}/weekly_{timestamp}.json"
+        f"date={date_folder}/weekly_{timestamp}.json"
+    )
 
     try:
         json_bytes = json.dumps(json_data).encode("utf-8")
@@ -42,34 +47,6 @@ def write_bronze(json_data: dict, symbol: str, timestamp: str | None = None) -> 
     except Exception as e:
         log.error("Bronze load failed", symbol=symbol, error=str(e))
         raise
-
-
-def write_silver(
-    parquet_bytes: bytes,
-    bucket: str = "stocks-data",
-    symbol: str | None = None,
-    timestamp: str | None = None,
-):
-    """load parquet bytes to silver layer"""
-
-    if timestamp is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    if symbol:
-        object_name = f"silver/stocks_metrics/{symbol}/weekly_{timestamp}.parquet"
-    else:
-        date_folder = datetime.now().strftime("%Y%m%d")
-        object_name = f"silver/unified_stocks/date={date_folder}/weekly_unified{timestamp}.parquet"
-
-    log.info(f"uploading silver layer: {object_name}")
-
-    # **Adjustment:** Use the direct Boto3 load_to_bronze function
-    return load_to_bronze(
-        data=parquet_bytes,
-        bucket=bucket,
-        object_name=object_name,
-        content_type="application/x-parquet",
-    )
 
 
 def read_bronze_by_symbol(

@@ -87,16 +87,10 @@ def alpha_vantage_silver_layer():
         Only allows those where success == True to pass through.
         """
         successful = [res for res in extracted_results if res.get("success") is True]
-        failed = [
-            res.get("symbol")
-            for res in extracted_results
-            if res.get("success") is False
-        ]
+        failed = [res.get("symbol") for res in extracted_results if res.get("success") is False]
 
         if failed:
-            log.warning(
-                "Symbols ignored due to API failures", count=len(failed), symbols=failed
-            )
+            log.warning("Symbols ignored due to API failures", count=len(failed), symbols=failed)
 
         if not successful:
             raise ValueError("No extractions were successful. Aborting pipeline.")

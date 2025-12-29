@@ -18,11 +18,6 @@ SELECT
     -- Keys
     s.stock_id,
     d.date_id,
-    
-    -- Denormalized Attributes
-    sd.stock_symbol AS symbol,
-    s.company_name,
-    sd.trade_date,
 
     -- Measures
     ROUND(sd.open_price::numeric, 4) AS open_price,
@@ -30,13 +25,17 @@ SELECT
     ROUND(sd.low_price::numeric, 4) AS low_price,
     ROUND(sd.adjusted_close_price::numeric, 4) AS adjusted_close_price,
     sd.trade_volume,
-    
+
     -- Calculated Metrics
-    ROUND((sd.adjusted_close_price - sd.open_price)::numeric, 4) AS weekly_return_abs,
-    ROUND(((sd.adjusted_close_price / NULLIF(sd.open_price, 0)) - 1)::numeric, 4) AS weekly_return_pct,
+    ROUND((sd.adjusted_close_price - sd.open_price)::numeric, 4)
+        AS weekly_return_abs,
+    ROUND(
+        ((sd.adjusted_close_price / NULLIF(sd.open_price, 0)) - 1)::numeric, 4
+    ) AS weekly_return_pct,
     ROUND((sd.high_price - sd.low_price)::numeric, 4) AS trading_range_abs,
-    ROUND(((sd.high_price / NULLIF(sd.low_price, 0)) - 1)::numeric, 4) AS volatility_pct,
-    
+    ROUND(((sd.high_price / NULLIF(sd.low_price, 0)) - 1)::numeric, 4)
+        AS volatility_pct,
+
     -- Metadata
     sd._ingestion_timestamp AS load_timestamp,
     'alpha_vantage' AS source_model

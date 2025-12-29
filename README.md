@@ -48,7 +48,7 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
 - **Engine**: **Polars** (Rust-backed processing) utilizing Arrow-native memory management.
 - **Orchestration:** Implemented via Airflow TaskFlow API with Dynamic Task Mapping to process multiple tickers in parallel.
 
-![Airflow Silver Layer DAG](images/alpha_vantage_silver_layer-graph.png)
+![Airflow Silver Layer DAG](images/graph-view-dag-silver.png)
 
 - **Performance Highlights**:
   - **Memory Efficiency**: Utilizes Arrow-native memory management to process financial time-series with zero-copy overhead.
@@ -60,10 +60,15 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
 ### 3.  Gold (Analytical / OLAP Layer)
 
 - **Concept**: **Dimensional Modeling (Star Schema)**.
+
 - **Engine**: **dbt (Data Build Tool)**.
+
 - **Implementation & Field Work**:
+
   - **Star Schema Design**: Transformation of staging models into a central `fact_adjusted_prices` table
+
   - **Dimension Strategy**: Implemented **SCD Type 1 logic** for `dim_stock` to maintain a streamlined, single-version-of-truth for descriptive attributes (Sector, Industry), optimizing JOIN performance for the BI layer.
+
   - **Surrogate Keys**: Utilization of `dbt_utils.generate_surrogate_key` to decouple business keys (symbols) from data warehouse internal logic, ensuring relational integrity.
 
 #### Gold Layer Preview (Fact Table)

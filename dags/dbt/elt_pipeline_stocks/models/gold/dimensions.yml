@@ -51,3 +51,49 @@ models:
                 regex: "^[A-Z0-9\\.]+$" # Ensures it is a valid ticker (uppercase letters/numbers)
               config:
                 severity: warn
+
+  - name: dim_source
+    description: >
+      Metadata dimension that tracks data provenance. 
+      Essential for data lineage and identifying the source of truth.
+    columns:
+      # PRIMARY KEY (PK)
+      - name: source_id
+        description: Primary key (Surrogate Key) based on source name and version.
+        data_tests:
+          - unique
+          - not_null
+
+      # Business Attributes
+      - name: source_name
+        description: Unique identifier for the data provider (e.g., alpha_vantage).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["alpha_vantage", "yahoo_finance", "manual_upload"]
+                config:
+                  severity: warn # Avisa si aparece una fuente nueva no mapeada
+
+      - name: source_tier
+        description: Reliability tier of the source (e.g., Gold, Silver, Bronze).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Gold", "Silver", "Bronze"]
+
+      - name: update_frequency
+        description: Expected data refresh rate.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Daily", "Weekly", "Monthly", "Real-time"]
+
+      - name: documentation_url
+        description: Link to API or source documentation.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_match_regex:
+              arguments:
+                regex: "^https?://.*" # URL validation

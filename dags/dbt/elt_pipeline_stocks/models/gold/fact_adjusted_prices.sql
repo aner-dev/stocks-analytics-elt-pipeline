@@ -3,7 +3,10 @@
 ) }}
 
 WITH source_data AS (
-    SELECT * FROM {{ ref('stg_weekly_adjusted_prices') }}
+    SELECT
+        *,
+        'alpha_vantage' AS source_name_key -- declare business key 
+    FROM {{ ref('stg_weekly_adjusted_prices') }}
 ),
 
 dim_stock AS (
@@ -12,12 +15,17 @@ dim_stock AS (
 
 dim_date AS (
     SELECT * FROM {{ ref('dim_date') }}
+),
+
+dim_source AS (
+    SELECT * FROM {{ ref('dim_source') }}
 )
 
 SELECT
     -- Keys
     s.stock_id,
     d.date_id,
+    src.source_id,
 
     -- Measures
     ROUND(sd.open_price::numeric, 4) AS open_price,
@@ -43,3 +51,4 @@ SELECT
 FROM source_data sd
 JOIN dim_stock s ON sd.stock_symbol = s.symbol
 JOIN dim_date d ON sd.trade_date = d.week_ending
+JOIN dim_source src ON sd.source_name_key = src.source_name

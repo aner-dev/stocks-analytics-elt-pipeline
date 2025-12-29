@@ -8,8 +8,19 @@ WITH unique_symbols AS (
     FROM {{ ref('stg_weekly_adjusted_prices') }}
 ),
 
-metadata AS (
-    SELECT * FROM {{ ref('stock_metadata') }}
+
+metadata_cleaned AS (
+    SELECT *
+    FROM (
+        SELECT 
+            symbol,
+            company_name,
+            sector,
+            industry,
+            ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY symbol) as row_num
+        FROM {{ ref('stock_metadata') }}
+    ) sub
+    WHERE row_num = 1
 )
 
 SELECT
@@ -38,4 +49,4 @@ SELECT
     TRUE AS is_active,
     CURRENT_TIMESTAMP AS created_at
 FROM unique_symbols s
-LEFT JOIN metadata m ON s.symbol = m.symbol
+LEFT JOIN metadata_cleaned m ON s.symbol = m.symbol

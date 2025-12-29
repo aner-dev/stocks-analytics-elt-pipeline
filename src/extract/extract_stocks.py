@@ -1,15 +1,16 @@
 # src/extract/alpha_extract.py (Extraction Utility Library)
 import time
-from typing import Any
-import requests
-import structlog
 import traceback
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
 from datetime import (
     datetime,
     timezone,
 )
+from typing import Any
+
+import requests
+import structlog
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 log = structlog.get_logger()
 
@@ -30,16 +31,14 @@ def extract_stocks_data(
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
         "Accept-Encoding": "gzip",
-        # "Connection": "close"  # OPTIONAL - try without this first
+        # "Connection": "close"  (OPTIONAL - the extraction functions correct without it)
     }
     try:
         log.info("Applying 20-second rate limit delay.", symbol=symbol)
         time.sleep(25)
 
         session = requests.Session()
-        retries = Retry(
-            total=2, backoff_factor=1, status_forcelist=[500, 502, 503, 504]
-        )
+        retries = Retry(total=2, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
         session.mount("https://", HTTPAdapter(max_retries=retries))
 
         log.info("Making API request via Robust Session", symbol=symbol)
@@ -55,9 +54,7 @@ def extract_stocks_data(
         # 1. CAPTURA DE LÍMITE DE FRECUENCIA
         if "Note" in data and "API call frequency" in data.get("Note", ""):
             # ... (Lógica Rate Limit)
-            raise ValueError(
-                "Alpha Vantage Rate Limit Exceeded (5 calls/min or 500/day)."
-            )
+            raise ValueError("Alpha Vantage Rate Limit Exceeded (5 calls/min or 500/day).")
 
         if any(k in data for k in ["Error Message", "Note", "Information"]):
             # Pero solo si no es la nota de éxito (a veces Alpha Vantage pone notas informativas)

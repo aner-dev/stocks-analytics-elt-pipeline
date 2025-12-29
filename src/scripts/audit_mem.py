@@ -1,8 +1,8 @@
-import polars as pl
-import pandas as pd
 import os
 import sys
 from typing import cast  # Importante para el LSP
+
+import polars as pl
 from dotenv import load_dotenv
 
 load_dotenv()

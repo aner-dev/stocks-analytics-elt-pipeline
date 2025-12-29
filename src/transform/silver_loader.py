@@ -1,16 +1,16 @@
 # src/load/silver_loader.py
 
-import structlog
 from datetime import datetime, timezone
-from typing import Dict, Any
+
+import structlog
+
 from src.config.settings import S3_BUCKET
+from src.load.db_connector import (
+    load_dataframe_to_db,
+)  # write to DB
 
 # 🚨 I/O Imports: SOLO conexiones y drivers
 from src.load.s3_load import read_bronze_by_key  # Lectura de S3
-from src.load.db_connector import (
-    load_dataframe_to_db,
-    insert_audit_metrics,
-)  # write to DB
 
 # --------------------------------------------------------------------------------------
 # 🚨 Transformación Pura (T): Lógica de negocio

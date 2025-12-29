@@ -1,7 +1,8 @@
 # src/setup/db_initializer.py
 
-import structlog
 from importlib import resources
+
+import structlog
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from sqlalchemy import text
 

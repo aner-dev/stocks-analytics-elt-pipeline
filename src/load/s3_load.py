@@ -1,7 +1,9 @@
-from datetime import datetime
 import json
+from datetime import datetime
+
 import structlog
-from src.aws.boto_client import load_to_bronze, download_from_s3, get_s3_client
+
+from src.aws.boto_client import download_from_s3, get_s3_client, load_to_bronze
 from src.config.settings import S3_BUCKET
 
 log = structlog.get_logger()
@@ -32,7 +34,8 @@ def write_bronze(json_data: dict, symbol: str, timestamp: str | None = None) -> 
         )
 
         # Return the data that must be read immediately after
-        # Although only the response dictionary is used here, it's good practice to return the data if it's small
+        # Although only the response dictionary is used here
+        # it's good practice to return the data if it's small
         # For the purpose of Data Discovery, we need to return the loaded data:
         return {"symbol": symbol, "bucket": S3_BUCKET, "key": object_name}
 

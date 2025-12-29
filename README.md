@@ -32,7 +32,7 @@ The dataset is sourced from the **Alpha Vantage API**, specifically focusing on 
 The project implements a **Medallion Architecture** designed for **batch processing**.
 This approach was chosen because the source financial data is updated on a weekly schedule, allowing for high-performance transformations and optimized resource usage without the overhead of real-time streaming.
 
-![System Architecture & Infrastructure](./images/pipeline_architecture.png)
+![System Architecture & Infrastructure](images/pipeline_architecture.png)
 The pipeline leverages Python (Polars) as the high-speed processing engine, orchestrating data movement from S3 to Postgres with a memory-efficient, Arrow-native approach.
 
 ### 1. 󱘨 Bronze (Raw Landing Zone)
@@ -48,7 +48,7 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
 - **Engine**: **Polars** (Rust-backed processing) utilizing Arrow-native memory management.
 - **Orchestration:** Implemented via Airflow TaskFlow API with Dynamic Task Mapping to process multiple tickers in parallel.
 
-![Airflow Silver Layer DAG](./images/alpha_vantage_silver_layer-graph.png)
+![Airflow Silver Layer DAG](images/alpha_vantage_silver_layer-graph.png)
 
 - **Performance Highlights**:
   - **Memory Efficiency**: Utilizes Arrow-native memory management to process financial time-series with zero-copy overhead.
@@ -71,7 +71,7 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
     - **Materialization Strategy**: Incremental materialization logic to optimize warehouse storage and compute costs.
 - **Orchestration**: Integration via **Astronomer Cosmos**, which dynamically parses the dbt project and renders it as a native Airflow Task Group, providing granular retry logic and metadata visibility for each model.
 
-![dbt Gold Layer Lineage](./images/gold_layer_dbt_dag-graph.png)
+![dbt Gold Layer Lineage](images/gold_layer_dbt_dag-graph.png)
 
 ### 4. 🛠️ Infrastructure & DevOps
 
@@ -102,41 +102,40 @@ To simulate a professional environment where the BI layer might reside in a priv
 I implemented a **Star Schema** to optimize query performance and ensure clear separation between business entities and quantitative events.
 
 ```mermaid
-erDiagram
-    fact_adjusted_prices }o--|| dim_stock : "joins on stock_id"
-    fact_adjusted_prices }o--|| dim_date : "joins on date_id"
-    
-    fact_adjusted_prices {
-        string stock_id FK
-        string date_id FK
-        string symbol
-        string company_name
-        date trade_date
-        float open_price
-        float high_price
-        float low_price
-        float adjusted_close_price
-        bigint trade_volume
-        float weekly_return_pct
-        float volatility_pct
-        timestamp load_timestamp
+classDiagram
+    direction LR
+    class fact_adjusted_prices {
+        +stock_id FK
+        +date_id FK
+        +symbol string
+        +open_price float
+        +high_price float
+        +low_price float
+        +adj_close_price float
+        +trade_volume bigint
+        +weekly_return_pct float
+        +volatility_pct float
+        +load_timestamp ts
     }
-    
-    dim_stock {
-        string stock_id PK
-        string symbol UK
-        string company_name
-        string sector
-        string industry
+
+    class dim_stock {
+        +stock_id PK
+        +symbol string
+        +company_name string
+        +sector string
+        +industry string
     }
-    
-    dim_date {
-        string date_id PK
-        date week_ending
-        int year
-        int week_number
-        int quarter
+
+    class dim_date {
+        +date_id PK
+        +week_ending date
+        +year int
+        +week_number int
+        +quarter int
     }
+
+    dim_stock "1" --* "0..*" fact_adjusted_prices : joins on stock_id
+    dim_date "1" --* "0..*" fact_adjusted_prices : joins on date_id
 ```
 
 ## 📊 Business Intelligence & Data Consumption

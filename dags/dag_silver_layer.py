@@ -2,20 +2,22 @@
 # FIXME: merge issue in PR/pull request in github (pyproject.toml & uv.lock)
 # FIXME: refactor and refine fact table (data modeling)
 
+from datetime import datetime, timedelta
+
+import structlog
 from airflow.decorators import dag, task
 from airflow.sdk.definitions.asset import Asset as Dataset
-from datetime import datetime, timedelta
-import structlog
+
+from src.aws.boto_client import ensure_bucket_exists
+from src.config.settings import S3_BUCKET
+from src.data_quality.validator import validate_raw_payload
+from src.extract.extract_stocks import extract_stocks_data
+from src.load.s3_load import write_bronze
+from src.setup.db_initializer import execute_ddl_setup
+from src.transform.silver_loader import transform_and_load_silver
 
 # --- BUSINESS LOGIC IMPORTS ---
 from src.utils.dag_helpers import define_symbols_and_parameters
-from src.setup.db_initializer import execute_ddl_setup
-from src.extract.extract_stocks import extract_stocks_data
-from src.data_quality.validator import validate_raw_payload
-from src.load.s3_load import write_bronze
-from src.aws.boto_client import ensure_bucket_exists
-from src.transform.silver_loader import transform_and_load_silver
-from src.config.settings import S3_BUCKET
 
 log = structlog.get_logger()
 

@@ -1,11 +1,9 @@
-from datetime import datetime
 import os
+
 import boto3
+import structlog
 from botocore.config import Config
 from botocore.exceptions import ClientError
-import structlog
-import json
-from typing import BinaryIO
 
 log = structlog.get_logger()
 

@@ -1,9 +1,10 @@
 # src/extract/test_extract.py
 
-import os
-import requests
-import time
 import json
+import os
+import time
+
+import requests
 
 # --- CONFIGURACIÓN ---
 # ¡IMPORTANTE! Usando la clave API que proporcionaste

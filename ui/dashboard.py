@@ -1,8 +1,9 @@
-import streamlit as st
-import polars as pl
 import os
-import plotly.express as px
 import time
+
+import plotly.express as px
+import polars as pl
+import streamlit as st
 
 # Professional page configuration
 st.set_page_config(

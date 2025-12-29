@@ -1,11 +1,12 @@
 # db_connector.py
+from typing import Any, Dict
+
 import polars as pl
-from psycopg2 import extras
+import structlog
 
 # 🚨 Key Airflow Import
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from typing import Dict, Any
-import structlog
+from psycopg2 import extras
 
 log = structlog.get_logger()
 

@@ -1,7 +1,6 @@
-import polars as pl
-from polars import exceptions
-from typing import Dict, Any
+from typing import Any, Dict
 
+import polars as pl
 import structlog
 
 log = structlog.get_logger()

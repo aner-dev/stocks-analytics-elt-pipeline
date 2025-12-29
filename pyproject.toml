@@ -50,3 +50,13 @@ root = ["./src", "."]
 
 [tool.pytest.ini_options]
 env_files = [".env"]
+
+[dependency-groups]
+dev = ["pytest>=9.0.2", "ruff>=0.14.10"]
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+
+[tool.ruff.lint]
+select = ["E", "F", "I"] # Errores, Fallos, y orden de Imports

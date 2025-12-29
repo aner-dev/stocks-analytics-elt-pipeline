@@ -1,7 +1,8 @@
 # src/utils/dag_helpers.py
-from airflow.models.variable import Variable
-from typing import List, Dict
 import json
+from typing import Dict, List
+
+from airflow.models.variable import Variable
 
 
 def define_symbols_and_parameters() -> List[Dict[str, str]]:

@@ -1,7 +1,8 @@
+import time
+
+import duckdb
 import pandas as pd
 import polars as pl
-import duckdb
-import time
 
 
 def benchmark(tool, load_func):

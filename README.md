@@ -75,17 +75,17 @@ ______________________________________________________________________
 
 ### 🛠️ Data Modeling Implementation
 
-Star Schema: Structured around a central Fact Table `(fact_adjusted_prices)` supported by three key dimensions: dim_stock (SCD Type 1), dim_date, and dim_source for full auditability.
+**Star Schema**: Structured around a central Fact Table `(fact_adjusted_prices)` supported by three key dimensions: dim_stock (SCD Type 1), dim_date, and dim_source for full auditability.
 
-Surrogate Keys: Generated via `dbt_utils.generate_surrogate_key` (MD5) to ensure relational integrity and decouple business keys from warehouse logic.
+**Surrogate Keys**: Generated via `dbt_utils.generate_surrogate_key` (MD5) to ensure relational integrity and decouple business keys from warehouse logic.
 
-Added Advanced Metrics: The Fact table features pre-calculated analytical fields including Z-Scores, Weekly Returns, and Volatility Benchmarks.
+**Added Advanced Metrics**: The **Fact Table** features pre-calculated analytical fields, including Z-Scores, Weekly Returns, and Volatility Benchmarks.
 
 <div align="center">
 
 ### Gold Layer Snapshot (Fact Table)
 
-[Fact Table](images/BI-fact-table.png)
+![Fact Table](images/BI-fact-table.png)
 
 </div>
 
@@ -105,7 +105,7 @@ The pipeline utilizes a decoupled DAG strategy to separate high-concurrency inge
   - by emitting a **Airflow Dataset** (STOCKS_SILVER_DATASET) the Gold Layer is reactively triggered only when the Silver Layer successfully commits new data.
   - This **event-driven** approach aims to provide an additional layer of resilience, ensuring that downstream modeling only occurs once data integrity is guaranteed in the silver layer.
 
-[DAG silver graph view](images/graph-view-dag-silver.png)
+![DAG silver graph view](images/graph-view-dag-silver.png)
 
 <details> <summary>🔍 <b>Challenges & Decisions</b></summary>
 
@@ -130,7 +130,7 @@ The Solution: Migrate to *Polars* as the transformation engine. This change not 
 
 ### 🥇 Gold Layer (dag_gold_layer)
 
-[DAG gold graph view](images/graph-view-dag-gold.png)
+![DAG gold graph view](images/graph-view-dag-gold.png)
 
 - Business Logic: I use *dbt* (data build tool) to calculate advanced metrics like Z-Scores and Volatility Benchmarks and for the DDL of the Star Schema & Dimensional Modeling.
 

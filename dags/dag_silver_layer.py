@@ -12,7 +12,7 @@ from src.data_quality.validator import validate_raw_payload
 from src.extract.extract_stocks import extract_stocks_data
 from src.load.s3_load import write_bronze
 from src.setup.db_initializer import execute_ddl_setup
-from src.transform.silver_loader import transform_and_load_silver
+from src.transform.polars_trasnform import transform_and_load_silver
 
 # --- BUSINESS LOGIC IMPORTS ---
 from src.utils.dag_helpers import define_symbols_and_parameters

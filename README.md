@@ -98,11 +98,11 @@ The pipeline utilizes a decoupled DAG strategy to separate high-concurrency inge
 
 ### 🔄 Ingestion & Normalization (dag_silver_layer)
 
-- Bronze (Extraction & Landing): Persists raw semi-structured JSON payloads into a RustFS bucket (S3 API compatible). This architecture design ensures high-durability and a allows a seamless path to a future **Cloud migration**.
+- **Bronze (Extraction & Landing)**: Persists raw semi-structured JSON payloads into a RustFS bucket (S3 API compatible). This architecture design ensures high-durability and a allows a seamless path to a future **Cloud migration**.
 
-- Silver (Staging & Cleansing): Raw data is transformed by **Polars** and loaded into a Postgres Database as the silver layer
+- **Silver (Staging & Cleansing)**: Raw data is transformed by **Polars** and loaded into a Postgres Database as the silver layer
 
-  - by emitting a **Airflow Dataset** (STOCKS_SILVER_DATASET) the Gold Layer is reactively triggered only when the Silver Layer successfully commits new data.
+  - By emitting a **Airflow Dataset** (STOCKS_SILVER_DATASET) the Gold Layer is reactively triggered only when the Silver Layer successfully commits new data.
   - This **event-driven** approach aims to provide an additional layer of resilience, ensuring that downstream modeling only occurs once data integrity is guaranteed in the silver layer.
 
 ![DAG silver graph view](images/graph-view-dag-silver.png)
@@ -111,14 +111,16 @@ The pipeline utilizes a decoupled DAG strategy to separate high-concurrency inge
 
 #### Switching from Pandas to Polars
 
-- The problem: Initially I used pandas to the Transformation phase. However, when processing multiple tickers in parallel, I noticed significant memory spikes and slow serialization when reading from the database.
+- **The problem**: Initially I used pandas to the Transformation phase. However, when processing multiple tickers in parallel, I noticed significant memory spikes and slow serialization when reading from the database.
 
-* Testing & Discovery: I developed a utility script (audit_mem.py) using Polars to leverage ConnectorX and Arrow and compare memory footprints & performance. The audit confirmed that Pandas was creating heavy Python objects, while Polars has significant performance advantages over pandas.
+* **Testing & Discovery**: I developed a utility script (audit_mem.py) using Polars to leverage ConnectorX and Arrow and compare memory footprints & performance. The audit confirmed that Pandas was creating heavy Python objects, while Polars has significant performance advantages over pandas.
   - see results and metrics in `scripts/audit_mem.py`
 
-The Solution: Migrate to *Polars* as the transformation engine. This change not only dropped the memory usage but also made JSON flattening roughly 10x faster.
+**The Solution**: Migrate to *Polars* as the transformation engine. This change not only dropped the memory usage but also made JSON flattening roughly 10x faster.
 
-#### Event-Driven Orchestration
+- **Goal:** Significant improvements in performance & compute
+
+#### Event-Driven DAG Orchestration
 
 **The Problem:** Originally the pipeline rely on a full time-based scheduling (Cron). However if the data ingestion delayed due to API rate-limiting, the posterior data modeling would trigger on incomplete or stale data. Thus, creating a **tight coupling** risk
 
@@ -132,31 +134,28 @@ The Solution: Migrate to *Polars* as the transformation engine. This change not 
 
 ![DAG gold graph view](images/graph-view-dag-gold.png)
 
-- Business Logic: I use *dbt* (data build tool) to calculate advanced metrics like Z-Scores and Volatility Benchmarks and for the DDL of the Star Schema & Dimensional Modeling.
+- **Business Logic**: I use *dbt* (data build tool) to calculate advanced metrics like Z-Scores and Volatility Benchmarks and for the DDL of the Star Schema & Dimensional Modeling.
 
-* Data-Aware Scheduling: The DAG is event-driven; it only executes once the Silver dataset is successfully updated.
+* **Data-Aware Scheduling**: The DAG is event-driven; it only executes once the Silver dataset is successfully updated.
 
 - **Data Integrity & Contracts:** Every run is followed by `dbt-expectations` tests. Enforcing referential integrity and schema validation. No "null" values or schema drifts reach the final Gold tables.
 - **SCD Management:** Handles **Slowly Changing Dimensions (Type 1)** to maintain an accurate record of stock metadata.
 
-<details> <summary>🔍 <b>Challenges & Decisions</b></summary>
-
-</details>
-
 ## 5. Infrastructure & Containerization
 
-The entire stack is containerized to ensure environment parity and simplified deployment. While developed using Podman and Astro CLI, it is fully compatible with Docker Compose.
+The entire stack is containerized to ensure environment parity and simplified deployment. While developed using Podman and Astro CLI, it is fully compatible with **Docker Compose**.
 
-<details> <summary>🔍 <b>Challenges & Decisions</b></summary>
+<details> <summary>🔍 <b>Infrastructure Issues, Challenges & Decisions</b></summary>
 
-🌐 Network Bottleneck (MTU Issue)
-The Problem: For a few days I was unable to correctly implement the **Extraction phase**. The airflow logs reporting only generic connection resets without signaling the root cause.
+#### 🌐 Network Bottleneck (MTU Issue)
 
-The Cause: While using Podman, I discovered that their default virtual bridge network used an MTU (Maximum Transmission Unit) of 65,000 bytes!. This caused massive packet fragmentation when communicating with the Alpha Vantage external API.
+**The Problem**: For a few days I was unable to correctly implement the **Extraction phase**. The airflow logs reporting only generic connection resets without signaling the root cause.
 
-The Solution: I manually defined a custom bridge network in `docker-compose.override.yml` with an MTU of 1500 bytes (the standard Ethernet limit). This immediately stabilized the API connection and extraction, proving that the bottleneck was in the infrastructure, not the code.
+**The Cause**: While using Podman, I discovered that their default virtual bridge network used an MTU (Maximum Transmission Unit) of 65,000 bytes!. This caused massive packet fragmentation when communicating with the Alpha Vantage external API.
 
-Verification: You can inspect your network's MTU settings using:
+**The Solution:** I manually defined a **custom bridge network** in `docker-compose.override.yml` with an **MTU** of 1500 bytes (the standard Ethernet limit). This immediately stabilized the API connection and extraction, proving that the bottleneck was in the infrastructure, not the code.
+
+**Verification**: You can inspect your network's MTU settings using:
 
 `podman network inspect airflow --format '{{index .options "com.docker.network.driver.mtu"}}'`
 
@@ -187,15 +186,28 @@ Verification: You can inspect your network's MTU settings using:
 
 * **Alerting System:** Configure Slack or Discord notifications for DAG failures and dbt test breaches using Airflow Callbacks and Webhooks.
 
-## 🚀 Quick Start
+*
+
+______________________________________________________________________
+
+## 🏁 Quick Start
+
+**1. Prerequisites**
+Ensure you have installed: [Astro CLI](https://www.astronomer.io/docs/astro-cli/install-cli/), [Podman](https://podman.io/)/[Docker](https://www.docker.com/), and [uv](https://docs.astral.sh/uv/).
+
+**2. Setup & Infrastructure**
 
 ```bash
-# 1. Clone & Environment Setup
-cp .env.example .env  # Add your Alpha Vantage API Key
-
-# 2. Spin up the Stack (Postgres, Airflow, RustFS, Streamlit)
+git clone https://github.com/aner-dev/stocks-analytics-elt-pipeline
+cd stocks-analytics-elt-pipeline
+cp .env.example .env
 make up
+```
 
-# 3. Execute Transformations & Tests
+**3. Execution & Analytics**:
+Once the Airflow stack is healthy at localhost:8080:
+
+```bash
 make dbt-run && make dbt-test
+make dashboard
 ```

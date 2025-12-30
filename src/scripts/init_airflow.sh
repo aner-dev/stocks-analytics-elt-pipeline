@@ -35,7 +35,7 @@ echo "✅ Assuming RustFS is now available."
 echo "✅ Services available. Proceeding with Airflow configuration."
 
 # 3a. Airflow Variable API KEY
-airflow variables set alpha_vantage_api_key 'YELVS772CHCMKLEK'
+airflow variables set alpha_vantage_api_key 'YOUR_API_KEY_HERE'
 echo "Variable 'alpha_vantage_api_key' created."
 
 # 3b. Airflow Variable SYMBOLS_LIST
@@ -58,7 +58,7 @@ echo "✅ Connection 'postgres_stocks_dwh' created."
 airflow connections add 'alpha_vantage_default' \
   --conn-type 'http' \
   --conn-host 'https://www.alphavantage.co' \
-  --conn-password 'YELVS772CHCMKLEK'
+  --conn-password 'YOUR_API_KEY_HERE'
 echo "✅ Connection 'alpha_vantage_default' created."
 
 airflow pools set alpha_vantage_api 1 "Limit calls to Alpha Vantage to 1 at a time"

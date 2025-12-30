@@ -8,7 +8,7 @@ import requests
 
 # --- CONFIGURACIÓN ---
 # ¡IMPORTANTE! Usando la clave API que proporcionaste
-ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "YELVS772CHCMKLEK")
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "your_mock_key")
 SYMBOL_TO_TEST = "IBM"
 BASE_URL = "https://www.alphavantage.co/query"
 # El User-Agent que usaste en tu código

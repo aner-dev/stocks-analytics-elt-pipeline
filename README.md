@@ -92,20 +92,9 @@ The pipeline leverages Python (Polars) as the high-speed processing engine, orch
 - **CLI-First Workflow**: Managed via a custom `Makefile` and `astro-cli`, optimizing developer experience (DX) and pipeline reproducibility.
 - **Development Environment**: Built and tested on **Linux**, leveraging shell scripting and environment-based configurations for secure credential management.
 
-### 🛡️ Network & Access (Chisel Tunneling)
+#### 🛡️ Network & Access (Chisel Tunneling)
 
 To simulate a professional environment where the BI layer might reside in a private network, I implemented **Chisel**. This creates a secure TCP tunnel that exposes the **Streamlit** dashboard port, applying container networking and secure data delivery.
-
-## 🛠️ Tech Stack & Tooling (The Pipeline Architecture)
-
-| Layer | Tools & Technologies |
-| :--- | :--- |
-| **Orchestration** | ![Airflow](https://img.shields.io/badge/Airflow-017CEE?style=flat&logo=Apache%20Airflow&logoColor=white) ![Cosmos](https://img.shields.io/badge/Cosmos-black?style=flat) |
-| **Processing (ELT)** | ![Polars](https://img.shields.io/badge/Polars-CD792C?style=flat) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) |
-| **Transformation** | ![dbt](https://img.shields.io/badge/dbt-FF694B?style=flat&logo=dbt&logoColor=white) |
-| **Storage (DWH)** | ![Postgres](https://img.shields.io/badge/Postgres-336791?style=flat&logo=postgresql&logoColor=white) ![RustFS](https://img.shields.io/badge/S3_Compatible-569A31?style=flat&logo=amazons3&logoColor=white) |
-| **Visualization**| ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=Streamlit&logoColor=white) |
-| **DevOps / Infra**| ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black) ![Podman](https://img.shields.io/badge/Podman-892CA0?style=flat&logo=podman&logoColor=white) |
 
 ## 📉 Data Modeling
 
@@ -194,6 +183,17 @@ While the core requirements are met, the following enhancements are planned for 
 - **High-Performance ELT**: Leveraging **Polars** (Rust-based) instead of Pandas reduced memory overhead significantly, allowing for efficient parallel processing of financial time-series.
 - **Resilient Ingestion**: Implemented an immutable **Bronze Layer** (S3) to ensure idempotency, preventing redundant API calls and protecting Alpha Vantage rate limits.
 - **Data Quality as Code**: Integrated **dbt-expectations** and referential integrity tests to ensure the Gold Layer always meets financial reporting standards.
+
+## 🛠️ Tech Stack & Tooling (The Pipeline Architecture)
+
+| Layer | Tools & Technologies |
+| :--- | :--- |
+| **Orchestration** | ![Airflow](https://img.shields.io/badge/Airflow-017CEE?style=flat&logo=Apache%20Airflow&logoColor=white) ![Cosmos](https://img.shields.io/badge/Cosmos-black?style=flat) |
+| **Processing (ELT)** | ![Polars](https://img.shields.io/badge/Polars-CD792C?style=flat) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) |
+| **Transformation** | ![dbt](https://img.shields.io/badge/dbt-FF694B?style=flat&logo=dbt&logoColor=white) |
+| **Storage (DWH)** | ![Postgres](https://img.shields.io/badge/Postgres-336791?style=flat&logo=postgresql&logoColor=white) ![RustFS](https://img.shields.io/badge/S3_Compatible-569A31?style=flat&logo=amazons3&logoColor=white) |
+| **Visualization**| ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=Streamlit&logoColor=white) |
+| **DevOps / Infra**| ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black) ![Podman](https://img.shields.io/badge/Podman-892CA0?style=flat&logo=podman&logoColor=white) |
 
 ## 🚀 Quick Start (Reproducibility)
 

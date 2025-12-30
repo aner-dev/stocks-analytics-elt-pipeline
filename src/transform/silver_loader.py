@@ -14,7 +14,7 @@ from src.load.s3_load import read_bronze_by_key  # Lectura de S3
 
 # --------------------------------------------------------------------------------------
 # 🚨 Transformación Pura (T): Lógica de negocio
-from src.transform.silver_transform_logic import standardize_and_clean_df
+from src.transform.polars_transform import standardize_and_clean_df
 
 # --------------------------------------------------------------------------------------
 

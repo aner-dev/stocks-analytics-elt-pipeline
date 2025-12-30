@@ -2,7 +2,7 @@ from datetime import datetime
 
 import polars as pl
 
-from src.transform.silver_transform_logic import standardize_and_clean_df
+from src.transform.polars_transform import standardize_and_clean_df
 
 
 def test_resilience_against_negative_prices():

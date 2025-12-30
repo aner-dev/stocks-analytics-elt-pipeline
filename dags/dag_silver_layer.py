@@ -1,6 +1,4 @@
 # dag_silver_layer.py
-# FIXME: merge issue in PR/pull request in github (pyproject.toml & uv.lock)
-# FIXME: refactor and refine fact table (data modeling)
 
 from datetime import datetime, timedelta
 
@@ -28,13 +26,13 @@ DBT_PROJECT_PATH = "/usr/local/airflow/dags/dbt/elt_pipeline_stocks"
 DBT_EXECUTABLE_PATH = "/usr/local/airflow/dbt_venv/bin/dbt"
 STOCKS_SILVER_DATASET = Dataset(
     "postgres://stocks_dwh_postgres:5432/stocks_dwh/stocks/weekly_adjusted_prices"
-)
+)  # Data-Aware Scheduling
 
 
 @dag(
     dag_id="alpha_vantage_silver_layer",
     start_date=datetime(2025, 1, 1),
-    schedule=None,
+    schedule="0 9 * * 1",  # Every Monday at 09:00 AM
     catchup=False,
     tags=["elt", "alpha_vantage", "finance", "stocks", "mapped", "dbt"],
     default_args={

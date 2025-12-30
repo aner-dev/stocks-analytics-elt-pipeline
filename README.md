@@ -1,233 +1,201 @@
-# Stocks Analytics ELT Pipeline
+# 🚀 High-Performance Stocks Analytics ELT Pipeline
 
-## Objective
+<div align="center">
+  ** Modern Financial ELT Data Pipeline | Weekly Stocks Analytics OLAP **
+</div>
 
-This project implements an end-to-end data pipeline to process financial time-series data from the **Alpha Vantage API** and visualize key market insights. It demonstrates proficiency in modern, high-performance tools such as **Polars** (Rust-backed processing), **Apache Airflow**, and **dbt**, following a local-to-cloud-ready architecture.
+______________________________________________________________________
 
-## Problem Statement
+## 📖 Table of Contents
 
-Raw data from financial APIs like Alpha Vantage is suboptimal and incomplete for the rigorous requirements of an OLAP Data Warehouse. The data arrives in deeply nested, rate-limited JSON structures that lack the relational integrity and historical consistency needed for complex Business Intelligence. Without a structured modeling layer, performing multi-ticker comparisons, volatility benchmarking, or time-series aggregations becomes computationally expensive and architecturally brittle.
+- [🏗️ 1. Architecture & Design](#%EF%B8%8F-1-architecture--design)
+- [📊 2. Business Intelligence & Dashboards](#-2-business-intelligence--dashboards)
+- [📉 3. Data Modeling](#-3-data-modeling)
+- [⚙️ 4. Orchestration](#%EF%B8%8F-4-orchestration)
+- [📦 5. Infrastructure & Containerization](#5-infrastructure--containerization)
+- [🛠️ 6. Tech Stack](#%EF%B8%8F-6-tech-stack)
+- [🚀 7. Future Improvements](#-7-future-improvements)
+- [🏁 8. Quick Start](#-quick-start)## 📖 Table of Contents
+- [🏗️ 1. Architecture & Design](#%EF%B8%8F-1-architecture--design)
+- [📊 2. Business Intelligence & Dashboards](#-2-business-intelligence--dashboards)
+- [📉 3. Data Modeling](#-3-data-modeling)
+- [⚙️ 4. Orchestration](#%EF%B8%8F-4-orchestration)
+- [📦 5. Infrastructure & Containerization](#5-infrastructure--containerization)
+- [🛠️ 6. Tech Stack](#%EF%B8%8F-6-tech-stack)
+- [🚀 7. Future Improvements](#-7-future-improvements)
+- [🏁 8. Quick Start](#-quick-start)
 
-## The solution
+______________________________________________________________________
 
-This project aims to transforms volatile API extracts into a robust, analytical environment using Dimensional Modeling.
-By architecting a Star Schema, we transition from raw "point-in-time" data to a structured Gold Layer.
-This facilitates high-performance analytical queries, allowing for sub-second aggregations and deep-dive slicing and dicing of market trends that would be impossible with the raw source data.
+## 🏗️ 1. Architecture & Design
 
-The goal is to create a robust data pipeline capable of handling rate-limited financial APIs and transforming messy JSON responses into an optimized Star Schema. The pipeline provides actionable insights through a **Streamlit dashboard** with visualizations including:
+This project implements a **Medallion Architecture** designed for **Batch Processing**. It decouples weekly frequency data ingestion to analytical modeling (OLAP), ensuring idempotency and system resilience.
 
-- **Categorical Distribution**: Sector performance and dividend frequency across different stock tickers.
-- **Temporal Distribution**: Weekly adjusted price trends and price volatility metrics over a 52-week period.
+![System Architecture](images/pipeline_architecture.png)
 
-## Dataset
+______________________________________________________________________
 
-The dataset is sourced from the **Alpha Vantage API**, specifically focusing on **Weekly Adjusted Stock Intelligence**.
+### ⚡ Key Engineering Insights
 
-- **Source**: [Alpha Vantage Stock API](https://www.alphavantage.co/)
-- **Data Points**: Historical weekly open, high, low, close, adjusted close, volume, and dividend amounts.
-- **Metadata**: Global ticker symbols mapped dynamically through Airflow task expansion.
+- **Engine: Polars (Rust-backed):** Selected over Pandas in order to leverage **Apache Arrow** and prioritizing efficient compute. This enables 10x faster JSON flattening and memory-efficient processing of weekly time-series data.
+- **Orchestration: Airflow & Astronomer Cosmos:** Orchestrates the dbt project by parsing the `manifest.json` into native Airflow Task Groups, allowing for granular retry logic at the model level.
+  - Parallelism: It uses **Dynamic Task Mapping** to process multiple stock tickers in parallel.
+- **Storage: Immutable Bronze Layer:** Raw payloads are persisted in **RustFS (S3 API-compatible)**. This allows for historical backfills without exhausting Alpha Vantage API credits.
+- **Data Quality:** Schema enforcement and referential integrity ensured via Polars (Silver Layer) and **dbt-expectations** (Gold Layer).
 
-## 🏗️ Architecture & Design
+______________________________________________________________________
 
-The project implements a **Medallion Architecture** designed for **batch processing**.
-This approach was chosen because the source financial data is updated on a weekly schedule, allowing for high-performance transformations and optimized resource usage without the overhead of real-time streaming.
+## 📊 2. Business Intelligence & Dashboards
 
-![System Architecture & Infrastructure](images/pipeline_architecture.png)
-The pipeline leverages Python (Polars) as the high-speed processing engine, orchestrating data movement from S3 to Postgres with a memory-efficient, Arrow-native approach.
+**BI-As-Code**: Used **Streamlit + ConnectorX**, the dashboard bypasses slow row-based serialization, streaming data directly from Postgres in Arrow format.
 
-### 1. 󱘨 Bronze (Raw Landing Zone)
+<div align="center">
 
-- Bronze (Immutable Data Lake): Implemented to decouple API ingestion from transformation. This architecture prevents vendor rate-limit exhaustion during backfilling or schema evolution; we can re-process historical weeks from the local S3-compatible storage without re-triggering Alpha Vantage credits, effectively creating an idempotent recovery boundary.
-- **Concept**: **Immutable Data Lake**.
-- **Action**: Automated ingestion of Alpha Vantage JSON payloads into **RustFS (S3-compatible)**.
-- **Role**: Serves as the **Single Source of Truth (SSOT)**. By persisting raw data, we ensure **idempotency** and recoverability, eliminating the need for redundant API calls during re-runs.
+### Market Volatility & Price Trends
 
-### 2. 󱘩 Silver (Normalized / Staging)
+![Price Trends](images/price_trends.png)
+*52-week volatility metrics and adjusted close trends calculated at the Warehouse level.*
 
-- **Concept**: Schema Enforcement & Data Cleaning.
-- **Engine**: **Polars** (Rust-backed processing) utilizing Arrow-native memory management.
-- **Orchestration:** Implemented via Airflow TaskFlow API with Dynamic Task Mapping to process multiple tickers in parallel.
+### Sector & Volume Distribution
 
-![Airflow Silver Layer DAG](images/graph-view-dag-silver.png)
+![Sector Analysis](images/volatility_and_volume.png)
+*Categorical breakdown of market performance and liquidity.*
 
-- **Performance Highlights**:
-  - **Memory Efficiency**: Utilizes Arrow-native memory management to process financial time-series with zero-copy overhead.
-  - **Parallelism**: Leverages multi-core parallelism for JSON flattening, outperforming traditional Pandas-based workflows by **5x-10x** in high-concurrency mapped tasks.
-- **Field Work**:
-  - **Type Casting**: Precise financial type enforcement (Decimal/Float64).
-  - **Deduplication**: Strategic transactional integrity checks before DWH ingestion.
+</div>
 
-### 3.  Gold (Analytical / OLAP Layer)
+> **Tech Highlight:** The UI performs real-time JOINs between the Fact table and Dimensions, proving the Gold Layer is optimized for high-speed analytical slicing.
 
-- **Concept**: **Dimensional Modeling (Star Schema)**.
+______________________________________________________________________
 
-- **Engine**: **dbt (Data Build Tool)**.
+## 📉 3. Data Modeling
 
-- **Implementation & Field Work**:
+**Dimensional Modeling**: Implementation of a **Star Schema** optimized for OLAP workloads (Kimball approach)
 
-  - **Star Schema Design**: Transformation of staging models into a central `fact_adjusted_prices` table
-
-  - **Dimension Strategy**: Implemented **SCD Type 1 logic** for `dim_stock` to maintain a streamlined, single-version-of-truth for descriptive attributes (Sector, Industry), optimizing JOIN performance for the BI layer.
-
-  - **Surrogate Keys**: Utilization of `dbt_utils.generate_surrogate_key` to decouple business keys (symbols) from data warehouse internal logic, ensuring relational integrity.
-
-#### Gold Layer Preview (Fact Table)
-
-![Final Fact Table Snapshot](images/BI-fact-table.png)
-*Snapshot of the central fact table containing pre-calculated financial metrics (Returns, Volatility, and Ranges).*
-
-- **Data Quality Framework**:
-  - **Contract Enforcement**: Utilizing `dbt-expectations` to validate ticker regex formats (`^[A-Z0-9\.]+$`) and non-negative financial ranges.
-  - **Referential Integrity**: Automated tests to ensure every `fact_key` maps correctly to `dim_stock` and `dim_date`, preventing orphaned records in the Star Schema.
-  - **Materialization Strategy**: Incremental materialization logic to optimize warehouse storage and compute costs.
-- **Orchestration**: Integration via **Astronomer Cosmos**, which dynamically parses the dbt project and renders it as a native Airflow Task Group, providing granular retry logic and metadata visibility for each model.
-
-![dbt Gold Layer Lineage](images/graph-view-dag-gold.png)
-
-### 4. 🛠️ Infrastructure & DevOps
-
-- **Containerization** & **Environment**: The entire stack is containerized using **Podman/Docker**, ensuring environment parity from development to deployment via `docker-compose.override.yml`.
-- **Orchestration**: **Apache Airflow (Astronomer)** manages the end-to-end workflow.
-- **Integration**: **Astronomer Cosmos** renders dbt models as native Airflow task groups, ensuring granular retries and full data lineage visibility.
-- **CLI-First Workflow**: Managed via a custom `Makefile` and `astro-cli`, optimizing developer experience (DX) and pipeline reproducibility.
-- **Development Environment**: Built and tested on **Linux**, leveraging shell scripting and environment-based configurations for secure credential management.
-
-#### 🛡️ Network & Access (Chisel Tunneling)
-
-To simulate a professional environment where the BI layer might reside in a private network, I implemented **Chisel**. This creates a secure TCP tunnel that exposes the **Streamlit** dashboard port, applying container networking and secure data delivery.
-
-## 📉 Data Modeling
-
-I implemented a **Star Schema** to optimize query performance and ensure clear separation between business entities and quantitative events.
 ![Star Schema - Entity Relationship Diagram](images/ER-diagram.png)
 
-## 📊 Business Intelligence & Data Consumption
+### 🛠️ Data Modeling Implementation
 
-While the core of this project is Engineering, data is useless if it cannot be consumed. So, i built a custom **BI-as-Code** dashboard using **Streamlit** to validate the final Gold Layer.
+Star Schema: Structured around a central Fact Table `(fact_adjusted_prices)` supported by three key dimensions: dim_stock (SCD Type 1), dim_date, and dim_source for full auditability.
 
-- **Why Streamlit (BI-as-Code)?**
+Surrogate Keys: Generated via `dbt_utils.generate_surrogate_key` (MD5) to ensure relational integrity and decouple business keys from warehouse logic.
 
-- Choosing Streamlit over drag-and-drop tools allows for a unified type-system across the stack. By using Polars + ConnectorX as the backend, the dashboard operates on the same Apache Arrow memory format as the Silver Layer, eliminating serialization overhead and ensuring that complex analytical calculations (like Z-Scores) are offloaded to the high-performance Polars engine instead of the visualization layer.
+Added Advanced Metrics: The Fact table features pre-calculated analytical fields including Z-Scores, Weekly Returns, and Volatility Benchmarks.
 
-- **Star Schema Validation**: The UI performs real-time JOINs between `fact_adjusted_prices` and dimensions, proving the DWH structure is sound.
+<div align="center">
 
-- **High-Performance Fetching**: Powered by **Polars + ConnectorX**, data is streamed from Postgres using the **Apache Arrow** format, bypassing the overhead of traditional Row-based processing.
+### Gold Layer Snapshot (Fact Table)
 
-- **Data Lineage Audit**: Each visual displays the `execution_batch_id` from the latest Airflow run, ensuring full traceability from API to Chart.
+[Fact Table](images/BI-fact-table.png)
 
-### Dashboard Insights
+</div>
 
-| Market Trends & Volatility | Sector Performance |
-|:---:|:---:|
-| ![Price Trends](images/price_trends.png) | ![Sector Analysis](images/volatility_and_volume.png) |
+______________________________________________________________________
 
-> **Validation:** The UI performs real-time JOINs between `fact_adjusted_prices` and dimensions, proving the DWH structure is sound and optimized for analytical queries.
+## ⚙️ 4. Orchestration
 
-## 🚀 Pipeline Observability & Performance
+The Orchestration is managed by Apache Airflow and Astronomer
+The pipeline utilizes a decoupled DAG strategy to separate high-concurrency ingestion from structural modeling.
 
-I implemented a dual-layer monitoring strategy to ensure both data integrity and system efficiency.
+### 🔄 Ingestion & Normalization (dag_silver_layer)
 
-### 1. Memory Efficiency Audit (`audit_mem.py`)
+- Bronze (Extraction & Landing): Persists raw semi-structured JSON payloads into a RustFS bucket (S3 API compatible). This architecture design ensures high-durability and a allows a seamless path to a future **Cloud migration**.
 
-To justify the choice of **Polars** over Pandas for high-frequency financial data, I included a benchmarking suite. Since Polars is built on Rust and uses **Apache Arrow**, it manages memory mapping with zero-copy overhead where possible.
+- Silver (Staging & Cleansing): Raw data is transformed by **Polars** and loaded into a Postgres Database as the silver layer
 
-- **Performance Gap:** My audits show that Polars maintains a significantly lower memory footprint during the "Silver to Gold" transition.
-- **Automated Validation:** The `test_memory_efficiency` script (integrated into the CI/CD mindset) ensures that any future refactoring does not exceed established memory thresholds.
+  - by emitting a **Airflow Dataset** (STOCKS_SILVER_DATASET) the Gold Layer is reactively triggered only when the Silver Layer successfully commits new data.
+  - This **event-driven** approach aims to provide an additional layer of resilience, ensuring that downstream modeling only occurs once data integrity is guaranteed in the silver layer.
 
-### 2. Multi-Stage Data Validation (Data Quality Checks)
+[DAG silver graph view](images/graph-view-dag-silver.png)
 
-Data quality is enforced at three critical checkpoints to prevent "silent failures":
+<details> <summary>🔍 <b>Challenges & Decisions</b></summary>
 
-- **Bronze (JSON Schema):** The `validate_raw_payload` logic catches API rate limits, "Information" messages from Alpha Vantage, and malformed JSON before they are persisted.
-- **Silver (Schema Enforcement):** Polars enforces strict typing (Float64, Int64, Date) and performs "logical pruning" (filtering out non-finite prices or zero volumes).
-- **Gold (Relational Integrity):** Through **dbt tests**, the pipeline validates the Star Schema, ensuring every record in `fact_adjusted_prices` has a valid corresponding entry in `dim_stock` and `dim_date`.
+#### Switching from Pandas to Polars
 
-### 3. Execution Traceability & Lineage
+- The problem: Initially I used pandas to the Transformation phase. However, when processing multiple tickers in parallel, I noticed significant memory spikes and slow serialization when reading from the database.
 
-Every record in the Warehouse is fully auditable through metadata columns:
+* Testing & Discovery: I developed a utility script (audit_mem.py) using Polars to leverage ConnectorX and Arrow and compare memory footprints & performance. The audit confirmed that Pandas was creating heavy Python objects, while Polars has significant performance advantages over pandas.
+  - see results and metrics in `scripts/audit_mem.py`
 
-- load_timestamp: Ensures full auditability of when data entered the warehouse, enabling precise point-in-time recovery and batch tracking.
+The Solution: Migrate to *Polars* as the transformation engine. This change not only dropped the memory usage but also made JSON flattening roughly 10x faster.
 
-## Evaluation Criteria Checklist
+#### Event-Driven Orchestration
 
-This project meets the requirements outlined in professional Data Engineering standards:
+**The Problem:** Originally the pipeline rely on a full time-based scheduling (Cron). However if the data ingestion delayed due to API rate-limiting, the posterior data modeling would trigger on incomplete or stale data. Thus, creating a **tight coupling** risk
 
-- ✅ **Problem description**: Clear objective to process financial data using a high-performance ELT stack.
-- ✅ **Cloud Readiness**: Uses S3-compatible storage (RustFS) and containerization, making it ready for AWS/GCP migration.
-- ✅ **Data ingestion (Batch)**: Implements an end-to-end batch pipeline with Airflow managing extractors and loaders.
-- ✅ **Data warehouse**: PostgreSQL utilized as the Data Warehouse with an optimized Star Schema (Gold Layer).
-- ✅ **Transformations**: Two-stage transformation using **Polars** (Silver) and **dbt** (Gold) for complex business logic.
-- ✅ **Dashboard**: A Streamlit dashboard provides both categorical (ticker/sector) and temporal (price over time) visualizations.
-- ✅ **Reproducibility**: Detailed steps provided using Astro CLI and Podman.
+**The Solution:** I implemented **Data-Aware Scheduling** via **Airflow Datasets**. The Silver DAG now emits a `STOCKS_SILVER_DATASET` outlet.
 
-## Future Improvements (Optional)
+- **Goal:** This ensures the Gold Layer is only triggered upon a successful data commit. This decision aims to strengthen pipeline resilience while eliminating the need for resource-heavy polling sensors.
 
-While the core requirements are met, the following enhancements are planned for production-grade evolution:
+</details>
 
-- **Testing & Data Quality**:
-  - Implement unit tests for Polars transformation logic using `pytest`.
-  - Add data quality checks within dbt using `dbt-tests` or **Great Expectations**.
-- **Automation & CI/CD**:
-  - Set up **GitHub Actions** for automated linting and testing.
-  - Containerize the Streamlit dashboard as a separate service.
-- **Observability**:
-  - Integrate **OpenLineage** to track data movement across Polars and dbt.
-  - Integrate **Grafana** and Prometheus to monitor pipeline health.
-  - Configure Slack/Discord notifications for DAG failures.
-- **Infrastructure as Code (IaC)**:
-  - **LocalStack Integration**: Transition from standalone RustFS to **LocalStack** to mock a full AWS environment (S3, Secrets Manager, and IAM) locally for production-parity testing.
-  - Transition setup to **Terraform** for AWS or GCP provisioning.
+### 🥇 Gold Layer (dag_gold_layer)
 
-## 🧠 Key Engineering Takeaways
+[DAG gold graph view](images/graph-view-dag-gold.png)
 
-- **High-Performance ELT**: Leveraging **Polars** (Rust-based) instead of Pandas reduced memory overhead significantly, allowing for efficient parallel processing of financial time-series.
-- **Resilient Ingestion**: Implemented an immutable **Bronze Layer** (S3) to ensure idempotency, preventing redundant API calls and protecting Alpha Vantage rate limits.
-- **Data Quality as Code**: Integrated **dbt-expectations** and referential integrity tests to ensure the Gold Layer always meets financial reporting standards.
+- Business Logic: I use *dbt* (data build tool) to calculate advanced metrics like Z-Scores and Volatility Benchmarks and for the DDL of the Star Schema & Dimensional Modeling.
 
-## 🛠️ Tech Stack & Tooling (The Pipeline Architecture)
+* Data-Aware Scheduling: The DAG is event-driven; it only executes once the Silver dataset is successfully updated.
 
-| Layer | Tools & Technologies |
+- **Data Integrity & Contracts:** Every run is followed by `dbt-expectations` tests. Enforcing referential integrity and schema validation. No "null" values or schema drifts reach the final Gold tables.
+- **SCD Management:** Handles **Slowly Changing Dimensions (Type 1)** to maintain an accurate record of stock metadata.
+
+<details> <summary>🔍 <b>Challenges & Decisions</b></summary>
+
+</details>
+
+## 5. Infrastructure & Containerization
+
+The entire stack is containerized to ensure environment parity and simplified deployment. While developed using Podman and Astro CLI, it is fully compatible with Docker Compose.
+
+<details> <summary>🔍 <b>Challenges & Decisions</b></summary>
+
+🌐 Network Bottleneck (MTU Issue)
+The Problem: For a few days I was unable to correctly implement the **Extraction phase**. The airflow logs reporting only generic connection resets without signaling the root cause.
+
+The Cause: While using Podman, I discovered that their default virtual bridge network used an MTU (Maximum Transmission Unit) of 65,000 bytes!. This caused massive packet fragmentation when communicating with the Alpha Vantage external API.
+
+The Solution: I manually defined a custom bridge network in `docker-compose.override.yml` with an MTU of 1500 bytes (the standard Ethernet limit). This immediately stabilized the API connection and extraction, proving that the bottleneck was in the infrastructure, not the code.
+
+Verification: You can inspect your network's MTU settings using:
+
+`podman network inspect airflow --format '{{index .options "com.docker.network.driver.mtu"}}'`
+
+</details>
+
+## 🛠️ 6. Tech Stack
+
+| Category | Tools |
 | :--- | :--- |
-| **Orchestration** | ![Airflow](https://img.shields.io/badge/Airflow-017CEE?style=flat&logo=Apache%20Airflow&logoColor=white) ![Cosmos](https://img.shields.io/badge/Cosmos-black?style=flat) |
-| **Processing (ELT)** | ![Polars](https://img.shields.io/badge/Polars-CD792C?style=flat) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) |
-| **Transformation** | ![dbt](https://img.shields.io/badge/dbt-FF694B?style=flat&logo=dbt&logoColor=white) |
-| **Storage (DWH)** | ![Postgres](https://img.shields.io/badge/Postgres-336791?style=flat&logo=postgresql&logoColor=white) ![RustFS](https://img.shields.io/badge/S3_Compatible-569A31?style=flat&logo=amazons3&logoColor=white) |
-| **Visualization**| ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=Streamlit&logoColor=white) |
-| **DevOps / Infra**| ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat&logo=linux&logoColor=black) ![Podman](https://img.shields.io/badge/Podman-892CA0?style=flat&logo=podman&logoColor=white) |
+| **Language & Engine** | Python 3.11, **Polars**, Apache Arrow |
+| **Orchestration** | Apache Airflow, Astronomer Cosmos |
+| **Data Transformation** | **dbt (Core)**, dbt-expectations, dbt-utils |
+| **Storage & DWH** | PostgreSQL, RustFS (S3-compatible API) |
+| **BI/Visualization** | Streamlit |
+| **Infrastructure** | Linux, Docker / Podman, Makefile, Git |
 
-## 🚀 Quick Start (Reproducibility)
+## 🚀 7. Future Improvements
 
-This project is fully containerized and automated via **Makefile**.
+- **Cloud Migration (IaC):** Transition from local RustFS to AWS S3 and Postgres to RDS/Snowflake using **Terraform**.
 
-### Prerequisites
+- **CI/CD Integration:** Implement GitHub Actions to automate dbt testing and linting (`sqlfluff`) on every Pull Request.
 
-- **Alpha Vantage API Key** [Get one here](https://www.alphavantage.co/support/#api-key).
-- **Docker/Podman** & **Astro CLI**.
-- Astronomer-Cosmos from dbt-on-astro Template (Optional)
+- **SCD Type 2 Implementation:** Transition from SCD Type 1 to Type 2 for `dim_stock` to track historical changes in sector or metadata.
 
-### One-Command Setup
+- **Advanced Observability:** Integrate **Great Expectations** for data profiling and **OpenLineage** for end-to-end metadata tracking.
+
+- **Monitoring & Observability:** Implement **Prometheus** and **Grafana** to monitor container health, CPU/Memory usage during Polars processing, and Airflow worker performance.
+
+* **Alerting System:** Configure Slack or Discord notifications for DAG failures and dbt test breaches using Airflow Callbacks and Webhooks.
+
+## 🚀 Quick Start
 
 ```bash
-# 1. Clone and set up environment
-git clone https://github.com/aner-dev/stocks-analytics-elt-pipeline.git
-cd elt_pipeline_stocks
-cp .env.example .env  # Add your API Key here
+# 1. Clone & Environment Setup
+cp .env.example .env  # Add your Alpha Vantage API Key
 
-# 2. Spin up the entire stack (Postgres, Airflow, RustFS, Streamlit)
+# 2. Spin up the Stack (Postgres, Airflow, RustFS, Streamlit)
 make up
 
-# 3. Run Pipeline & Tests
-make dbt-run
-make dbt-test
-
-# 4. View Analytics
-make dashboard
+# 3. Execute Transformations & Tests
+make dbt-run && make dbt-test
 ```
-
-#Developed by Aner Dev.
-
-**Tech Stack:**
-![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
-![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
-![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
-![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)

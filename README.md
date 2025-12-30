@@ -1,21 +1,11 @@
 # 🚀 High-Performance Stocks Analytics ELT Pipeline
 
-<div align="center">
-  ** Modern Financial ELT Data Pipeline | Weekly Stocks Analytics OLAP **
-</div>
+> **Modern Financial ELT Data Pipeline** | **Weekly Stocks Analytics OLAP**
 
 ______________________________________________________________________
 
 ## 📖 Table of Contents
 
-- [🏗️ 1. Architecture & Design](#%EF%B8%8F-1-architecture--design)
-- [📊 2. Business Intelligence & Dashboards](#-2-business-intelligence--dashboards)
-- [📉 3. Data Modeling](#-3-data-modeling)
-- [⚙️ 4. Orchestration](#%EF%B8%8F-4-orchestration)
-- [📦 5. Infrastructure & Containerization](#5-infrastructure--containerization)
-- [🛠️ 6. Tech Stack](#%EF%B8%8F-6-tech-stack)
-- [🚀 7. Future Improvements](#-7-future-improvements)
-- [🏁 8. Quick Start](#-quick-start)## 📖 Table of Contents
 - [🏗️ 1. Architecture & Design](#%EF%B8%8F-1-architecture--design)
 - [📊 2. Business Intelligence & Dashboards](#-2-business-intelligence--dashboards)
 - [📉 3. Data Modeling](#-3-data-modeling)
